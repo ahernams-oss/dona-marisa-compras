@@ -170,6 +170,25 @@ export function CatalogPicker({ onAdd, existingKeys }: Props) {
             </div>
           )}
         </div>
+        <div className="flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2 py-1">
+          <button
+            type="button"
+            onClick={() => setInlineQty((q) => Math.max(1, q - 1))}
+            className="rounded-full p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+            aria-label="Diminuir quantidade"
+          >
+            <Minus className="h-3.5 w-3.5" />
+          </button>
+          <span className="min-w-[1.5rem] text-center text-sm font-semibold tabular-nums">{inlineQty}</span>
+          <button
+            type="button"
+            onClick={() => setInlineQty((q) => q + 1)}
+            className="rounded-full p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+            aria-label="Aumentar quantidade"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        </div>
         <Button
           type="button"
           variant="outline"
