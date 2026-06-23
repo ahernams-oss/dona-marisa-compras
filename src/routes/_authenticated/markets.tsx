@@ -18,6 +18,43 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const BR_STATES: { uf: string; name: string }[] = [
+  { uf: "AC", name: "Acre" },
+  { uf: "AL", name: "Alagoas" },
+  { uf: "AP", name: "Amapá" },
+  { uf: "AM", name: "Amazonas" },
+  { uf: "BA", name: "Bahia" },
+  { uf: "CE", name: "Ceará" },
+  { uf: "DF", name: "Distrito Federal" },
+  { uf: "ES", name: "Espírito Santo" },
+  { uf: "GO", name: "Goiás" },
+  { uf: "MA", name: "Maranhão" },
+  { uf: "MT", name: "Mato Grosso" },
+  { uf: "MS", name: "Mato Grosso do Sul" },
+  { uf: "MG", name: "Minas Gerais" },
+  { uf: "PA", name: "Pará" },
+  { uf: "PB", name: "Paraíba" },
+  { uf: "PR", name: "Paraná" },
+  { uf: "PE", name: "Pernambuco" },
+  { uf: "PI", name: "Piauí" },
+  { uf: "RJ", name: "Rio de Janeiro" },
+  { uf: "RN", name: "Rio Grande do Norte" },
+  { uf: "RS", name: "Rio Grande do Sul" },
+  { uf: "RO", name: "Rondônia" },
+  { uf: "RR", name: "Roraima" },
+  { uf: "SC", name: "Santa Catarina" },
+  { uf: "SP", name: "São Paulo" },
+  { uf: "SE", name: "Sergipe" },
+  { uf: "TO", name: "Tocantins" },
+];
 
 export const Route = createFileRoute("/_authenticated/markets")({
   component: MarketsPage,
@@ -28,6 +65,7 @@ type Market = {
   name: string;
   chain: string | null;
   city: string | null;
+  state: string | null;
   color: string | null;
   latitude: number | null;
   longitude: number | null;
@@ -118,7 +156,7 @@ function MarketsPage() {
                   <div>
                     <h3 className="font-display text-lg font-bold leading-tight">{m.name}</h3>
                     <p className="text-xs text-muted-foreground">
-                      {[m.chain, m.city].filter(Boolean).join(" • ") || "—"}
+                      {[m.chain, [m.city, m.state].filter(Boolean).join("/")].filter(Boolean).join(" • ") || "—"}
                     </p>
                   </div>
                 </div>
@@ -191,7 +229,10 @@ function MarketDialog({
 }) {
   const [name, setName] = useState("");
   const [chain, setChain] = useState("");
+  const [state, setState] = useState<string>("");
   const [city, setCity] = useState("");
+  const [cities, setCities] = useState<string[]>([]);
+  const [loadingCities, setLoadingCities] = useState(false);
   const [color, setColor] = useState(COLORS[0]);
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
@@ -201,12 +242,33 @@ function MarketDialog({
     if (open) {
       setName(market?.name ?? "");
       setChain(market?.chain ?? "");
+      setState(market?.state ?? "");
       setCity(market?.city ?? "");
       setColor(market?.color ?? COLORS[0]);
       setLat(market?.latitude != null ? String(market.latitude) : "");
       setLng(market?.longitude != null ? String(market.longitude) : "");
     }
   }, [open, market]);
+
+  useEffect(() => {
+    if (!state) {
+      setCities([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingCities(true);
+    fetch(`https://servicodadosabertos.ibge.gov.br/api/v1/localidades/estados/${state}/municipios`)
+      .then((r) => r.json())
+      .then((data: { nome: string }[]) => {
+        if (cancelled) return;
+        setCities(data.map((d) => d.nome).sort((a, b) => a.localeCompare(b, "pt-BR")));
+      })
+      .catch(() => !cancelled && setCities([]))
+      .finally(() => !cancelled && setLoadingCities(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [state]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -223,7 +285,8 @@ function MarketDialog({
     const payload = {
       name: trimmed,
       chain: chain.trim() || null,
-      city: city.trim() || null,
+      state: state || null,
+      city: city || null,
       color,
       latitude: lat.trim() ? Number(lat) : null,
       longitude: lng.trim() ? Number(lng) : null,
@@ -258,25 +321,67 @@ function MarketDialog({
               required
             />
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="m-chain">Rede</Label>
+            <Input
+              id="m-chain"
+              value={chain}
+              onChange={(e) => setChain(e.target.value)}
+              maxLength={80}
+              placeholder="Ex.: Carrefour"
+            />
+          </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="m-chain">Rede</Label>
-              <Input
-                id="m-chain"
-                value={chain}
-                onChange={(e) => setChain(e.target.value)}
-                maxLength={80}
-                placeholder="Ex.: Carrefour"
-              />
+              <Label htmlFor="m-state">Estado</Label>
+              <Select
+                value={state}
+                onValueChange={(v) => {
+                  setState(v);
+                  setCity("");
+                }}
+              >
+                <SelectTrigger id="m-state">
+                  <SelectValue placeholder="Selecione o estado" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {BR_STATES.map((s) => (
+                    <SelectItem key={s.uf} value={s.uf}>
+                      {s.uf} — {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="m-city">Cidade</Label>
-              <Input
-                id="m-city"
+              <Select
                 value={city}
-                onChange={(e) => setCity(e.target.value)}
-                maxLength={80}
-              />
+                onValueChange={setCity}
+                disabled={!state || loadingCities}
+              >
+                <SelectTrigger id="m-city">
+                  <SelectValue
+                    placeholder={
+                      !state
+                        ? "Selecione um estado"
+                        : loadingCities
+                          ? "Carregando…"
+                          : "Selecione a cidade"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {city && !cities.includes(city) && (
+                    <SelectItem value={city}>{city}</SelectItem>
+                  )}
+                  {cities.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">

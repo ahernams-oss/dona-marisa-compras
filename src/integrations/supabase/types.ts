@@ -97,6 +97,7 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           name: string
+          state: string | null
         }
         Insert: {
           chain?: string | null
@@ -107,6 +108,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           name: string
+          state?: string | null
         }
         Update: {
           chain?: string | null
@@ -117,6 +119,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           name?: string
+          state?: string | null
         }
         Relationships: []
       }
