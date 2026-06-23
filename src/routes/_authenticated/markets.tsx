@@ -65,6 +65,7 @@ type Market = {
   name: string;
   chain: string | null;
   city: string | null;
+  state: string | null;
   color: string | null;
   latitude: number | null;
   longitude: number | null;
