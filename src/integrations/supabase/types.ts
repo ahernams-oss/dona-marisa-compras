@@ -14,7 +14,169 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      list_items: {
+        Row: {
+          created_at: string
+          id: string
+          list_id: string
+          notes: string | null
+          product_key: string
+          product_name: string
+          quantity: number
+          unit: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          list_id: string
+          notes?: string | null
+          product_key: string
+          product_name: string
+          quantity?: number
+          unit?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          list_id?: string
+          notes?: string | null
+          product_key?: string
+          product_name?: string
+          quantity?: number
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "list_items_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "shopping_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      markets: {
+        Row: {
+          chain: string | null
+          city: string | null
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          chain?: string | null
+          city?: string | null
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          chain?: string | null
+          city?: string | null
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      price_reports: {
+        Row: {
+          brand: string | null
+          created_at: string
+          id: string
+          market_id: string
+          photo_url: string | null
+          price: number
+          product_key: string
+          product_name: string
+          reporter_id: string
+          unit: string | null
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          id?: string
+          market_id: string
+          photo_url?: string | null
+          price: number
+          product_key: string
+          product_name: string
+          reporter_id: string
+          unit?: string | null
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          id?: string
+          market_id?: string
+          photo_url?: string | null
+          price?: number
+          product_key?: string
+          product_name?: string
+          reporter_id?: string
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_reports_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          city: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      shopping_lists: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
