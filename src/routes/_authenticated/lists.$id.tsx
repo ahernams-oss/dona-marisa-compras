@@ -53,9 +53,6 @@ function ListDetail() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [prices, setPrices] = useState<PriceReport[]>([]);
   const [freight, setFreight] = useState<Record<string, number>>({});
-  const [newItem, setNewItem] = useState("");
-  const [newQty, setNewQty] = useState("1");
-  const [newCategory, setNewCategory] = useState<CategoryValue>("outros");
   const [historyFor, setHistoryFor] = useState<Item | null>(null);
 
   const isOwner = !!user && !!list && list.user_id === user.id;
