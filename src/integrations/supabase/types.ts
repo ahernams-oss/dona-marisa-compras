@@ -89,6 +89,7 @@ export type Database = {
       }
       markets: {
         Row: {
+          address: string | null
           chain: string | null
           city: string | null
           color: string | null
@@ -97,9 +98,13 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           name: string
+          neighborhood: string | null
+          number: string | null
+          postal_code: string | null
           state: string | null
         }
         Insert: {
+          address?: string | null
           chain?: string | null
           city?: string | null
           color?: string | null
@@ -108,9 +113,13 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           name: string
+          neighborhood?: string | null
+          number?: string | null
+          postal_code?: string | null
           state?: string | null
         }
         Update: {
+          address?: string | null
           chain?: string | null
           city?: string | null
           color?: string | null
@@ -119,6 +128,9 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           name?: string
+          neighborhood?: string | null
+          number?: string | null
+          postal_code?: string | null
           state?: string | null
         }
         Relationships: []
