@@ -32,7 +32,7 @@ export function PriceSparkline({ data, width = 96, height = 28 }: Props) {
   const last = data[data.length - 1].price;
   const first = data[0].price;
   const isDown = last < first;
-  const color = isDown ? "hsl(var(--success))" : last > first ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))";
+  const color = isDown ? "var(--success)" : last > first ? "var(--destructive)" : "var(--muted-foreground)";
 
   return (
     <svg width={width} height={height} aria-label="Evolução de preço">
