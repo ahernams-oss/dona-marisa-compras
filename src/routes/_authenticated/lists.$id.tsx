@@ -87,7 +87,7 @@ function ListDetail() {
 
 
   const addFromCatalog = async (
-    picks: { product_name: string; product_key: string; category: string; unit: string }[],
+    picks: { product_name: string; product_key: string; category: string; unit: string; quantity: number }[],
   ) => {
     if (picks.length === 0) return;
     const existingByKey = new Map(items.map((i) => [i.product_key, i]));
@@ -96,7 +96,7 @@ function ListDetail() {
     for (const p of picks) {
       const existing = existingByKey.get(p.product_key);
       if (existing) {
-        toUpdate.push({ id: existing.id, quantity: existing.quantity + 1 });
+        toUpdate.push({ id: existing.id, quantity: existing.quantity + p.quantity });
       } else {
         toInsert.push(p);
       }
@@ -107,7 +107,7 @@ function ListDetail() {
         list_id: id,
         product_name: p.product_name,
         product_key: p.product_key,
-        quantity: 1,
+        quantity: p.quantity,
         category: p.category,
         unit: p.unit,
       }));
