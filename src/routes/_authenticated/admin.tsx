@@ -41,6 +41,7 @@ function AdminPage() {
   const checkFn = useServerFn(checkIsAdmin);
   const listFn = useServerFn(listUsers);
   const setRoleFn = useServerFn(setUserRole);
+  const pricesFn = useServerFn(listPricesByMarket);
 
   const adminQuery = useQuery({
     queryKey: ["is-admin"],
