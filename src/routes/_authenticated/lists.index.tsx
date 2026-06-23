@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export const Route = createFileRoute("/_authenticated/lists")({
+export const Route = createFileRoute("/_authenticated/lists/")({
   component: ListsPage,
 });
 

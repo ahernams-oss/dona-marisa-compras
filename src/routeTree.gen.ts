@@ -15,8 +15,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiExtractPriceRouteImport } from './routes/api/extract-price'
 import { Route as AuthenticatedReportRouteImport } from './routes/_authenticated/report'
 import { Route as AuthenticatedMarketsRouteImport } from './routes/_authenticated/markets'
-import { Route as AuthenticatedListsRouteImport } from './routes/_authenticated/lists'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedListsIndexRouteImport } from './routes/_authenticated/lists.index'
 import { Route as AuthenticatedListsIdRouteImport } from './routes/_authenticated/lists.$id'
 
 const AuthRoute = AuthRouteImport.update({
@@ -48,41 +48,41 @@ const AuthenticatedMarketsRoute = AuthenticatedMarketsRouteImport.update({
   path: '/markets',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedListsRoute = AuthenticatedListsRouteImport.update({
-  id: '/lists',
-  path: '/lists',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedListsIndexRoute = AuthenticatedListsIndexRouteImport.update({
+  id: '/lists/',
+  path: '/lists/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedListsIdRoute = AuthenticatedListsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AuthenticatedListsRoute,
+  id: '/lists/$id',
+  path: '/lists/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
-  '/lists': typeof AuthenticatedListsRouteWithChildren
   '/markets': typeof AuthenticatedMarketsRoute
   '/report': typeof AuthenticatedReportRoute
   '/api/extract-price': typeof ApiExtractPriceRoute
   '/lists/$id': typeof AuthenticatedListsIdRoute
+  '/lists/': typeof AuthenticatedListsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
-  '/lists': typeof AuthenticatedListsRouteWithChildren
   '/markets': typeof AuthenticatedMarketsRoute
   '/report': typeof AuthenticatedReportRoute
   '/api/extract-price': typeof ApiExtractPriceRoute
   '/lists/$id': typeof AuthenticatedListsIdRoute
+  '/lists': typeof AuthenticatedListsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -90,11 +90,11 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
-  '/_authenticated/lists': typeof AuthenticatedListsRouteWithChildren
   '/_authenticated/markets': typeof AuthenticatedMarketsRoute
   '/_authenticated/report': typeof AuthenticatedReportRoute
   '/api/extract-price': typeof ApiExtractPriceRoute
   '/_authenticated/lists/$id': typeof AuthenticatedListsIdRoute
+  '/_authenticated/lists/': typeof AuthenticatedListsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -102,32 +102,32 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/admin'
-    | '/lists'
     | '/markets'
     | '/report'
     | '/api/extract-price'
     | '/lists/$id'
+    | '/lists/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
     | '/admin'
-    | '/lists'
     | '/markets'
     | '/report'
     | '/api/extract-price'
     | '/lists/$id'
+    | '/lists'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/admin'
-    | '/_authenticated/lists'
     | '/_authenticated/markets'
     | '/_authenticated/report'
     | '/api/extract-price'
     | '/_authenticated/lists/$id'
+    | '/_authenticated/lists/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -181,13 +181,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMarketsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/lists': {
-      id: '/_authenticated/lists'
-      path: '/lists'
-      fullPath: '/lists'
-      preLoaderRoute: typeof AuthenticatedListsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -195,39 +188,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/lists/': {
+      id: '/_authenticated/lists/'
+      path: '/lists'
+      fullPath: '/lists/'
+      preLoaderRoute: typeof AuthenticatedListsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/lists/$id': {
       id: '/_authenticated/lists/$id'
-      path: '/$id'
+      path: '/lists/$id'
       fullPath: '/lists/$id'
       preLoaderRoute: typeof AuthenticatedListsIdRouteImport
-      parentRoute: typeof AuthenticatedListsRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
-interface AuthenticatedListsRouteChildren {
-  AuthenticatedListsIdRoute: typeof AuthenticatedListsIdRoute
-}
-
-const AuthenticatedListsRouteChildren: AuthenticatedListsRouteChildren = {
-  AuthenticatedListsIdRoute: AuthenticatedListsIdRoute,
-}
-
-const AuthenticatedListsRouteWithChildren =
-  AuthenticatedListsRoute._addFileChildren(AuthenticatedListsRouteChildren)
-
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
-  AuthenticatedListsRoute: typeof AuthenticatedListsRouteWithChildren
   AuthenticatedMarketsRoute: typeof AuthenticatedMarketsRoute
   AuthenticatedReportRoute: typeof AuthenticatedReportRoute
+  AuthenticatedListsIdRoute: typeof AuthenticatedListsIdRoute
+  AuthenticatedListsIndexRoute: typeof AuthenticatedListsIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
-  AuthenticatedListsRoute: AuthenticatedListsRouteWithChildren,
   AuthenticatedMarketsRoute: AuthenticatedMarketsRoute,
   AuthenticatedReportRoute: AuthenticatedReportRoute,
+  AuthenticatedListsIdRoute: AuthenticatedListsIdRoute,
+  AuthenticatedListsIndexRoute: AuthenticatedListsIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
