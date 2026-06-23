@@ -99,8 +99,10 @@ export function CatalogPicker({ onAdd, existingKeys }: Props) {
         product_key: normalizeProductKey(name),
         category: "outros",
         unit: "un",
+        quantity: inlineQty,
       },
     ]);
+    setInlineQty(1);
   };
 
   return (
