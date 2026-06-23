@@ -85,30 +85,6 @@ function ListDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // suggest category from product name typed
-  useEffect(() => {
-    if (newItem.trim()) setNewCategory(suggestCategory(newItem));
-  }, [newItem]);
-
-  const addItem = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newItem.trim()) return;
-    const qty = Math.max(1, Number(newQty) || 1);
-    const { error } = await supabase.from("list_items").insert({
-      list_id: id,
-      product_name: newItem.trim(),
-      product_key: normalizeProductKey(newItem),
-      quantity: qty,
-      category: newCategory,
-    });
-    if (error) toast.error(error.message);
-    else {
-      setNewItem("");
-      setNewQty("1");
-      setNewCategory("outros");
-      load();
-    }
-  };
 
   const addFromCatalog = async (
     picks: { product_name: string; product_key: string; category: string; unit: string }[],
