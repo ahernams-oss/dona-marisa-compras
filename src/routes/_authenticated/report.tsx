@@ -183,7 +183,30 @@ function ReportPage() {
             <Label htmlFor="product">
               Produto {extracting && <Sparkles className="ml-1 inline h-3 w-3 text-primary" />}
             </Label>
-            <Input id="product" value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Ex: Arroz Tio João 5kg" className="mt-1.5" required />
+            <Input
+              id="product"
+              value={productName}
+              onChange={(e) => {
+                setProductName(e.target.value);
+                if (e.target.value && category === "outros") setCategory(suggestCategory(e.target.value));
+              }}
+              placeholder="Ex: Arroz Tio João 5kg"
+              className="mt-1.5"
+              required
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <Label htmlFor="category">Categoria (corredor)</Label>
+            <select
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value as CategoryValue)}
+              className="mt-1.5 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>
+              ))}
+            </select>
           </div>
           <div>
             <Label htmlFor="brand">Marca (opcional)</Label>
