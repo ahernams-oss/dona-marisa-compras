@@ -492,23 +492,61 @@ function MarketDialog({
               </Select>
             </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-[1fr_120px_1fr]">
             <div className="space-y-1.5">
-              <Label htmlFor="m-lat">Latitude</Label>
+              <Label htmlFor="m-address">Logradouro</Label>
+              <Input
+                id="m-address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Rua, avenida…"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="m-number">Número</Label>
+              <Input
+                id="m-number"
+                value={number}
+                onChange={(e) => setNumber(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="m-neigh">Bairro</Label>
+              <Input
+                id="m-neigh"
+                value={neighborhood}
+                onChange={(e) => setNeighborhood(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label>Coordenadas</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleUseLocation}
+                disabled={locating}
+              >
+                {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
+                Usar minha localização
+              </Button>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
               <Input
                 id="m-lat"
                 type="number"
                 step="any"
+                placeholder="Latitude"
                 value={lat}
                 onChange={(e) => setLat(e.target.value)}
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="m-lng">Longitude</Label>
               <Input
                 id="m-lng"
                 type="number"
                 step="any"
+                placeholder="Longitude"
                 value={lng}
                 onChange={(e) => setLng(e.target.value)}
               />
