@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, ListPlus, Check, X } from "lucide-react";
+import { Search, ListPlus, Check, X, Minus, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,7 @@ type AddPayload = {
   product_key: string;
   category: string;
   unit: string;
+  quantity: number;
 };
 
 type Props = {
@@ -70,6 +71,8 @@ export function CatalogPicker({ onAdd, existingKeys }: Props) {
       .slice(0, 8);
   }, [query, all]);
 
+  const [inlineQty, setInlineQty] = useState(1);
+
   const handlePick = async (p: CatalogProduct) => {
     setQuery("");
     setPopoverOpen(false);
@@ -79,8 +82,10 @@ export function CatalogPicker({ onAdd, existingKeys }: Props) {
         product_key: p.product_key,
         category: p.category,
         unit: p.unit,
+        quantity: inlineQty,
       },
     ]);
+    setInlineQty(1);
   };
 
   const handleAddCustom = async () => {
@@ -94,8 +99,10 @@ export function CatalogPicker({ onAdd, existingKeys }: Props) {
         product_key: normalizeProductKey(name),
         category: "outros",
         unit: "un",
+        quantity: inlineQty,
       },
     ]);
+    setInlineQty(1);
   };
 
   return (
@@ -163,6 +170,25 @@ export function CatalogPicker({ onAdd, existingKeys }: Props) {
             </div>
           )}
         </div>
+        <div className="flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2 py-1">
+          <button
+            type="button"
+            onClick={() => setInlineQty((q) => Math.max(1, q - 1))}
+            className="rounded-full p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+            aria-label="Diminuir quantidade"
+          >
+            <Minus className="h-3.5 w-3.5" />
+          </button>
+          <span className="min-w-[1.5rem] text-center text-sm font-semibold tabular-nums">{inlineQty}</span>
+          <button
+            type="button"
+            onClick={() => setInlineQty((q) => q + 1)}
+            className="rounded-full p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+            aria-label="Aumentar quantidade"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        </div>
         <Button
           type="button"
           variant="outline"
@@ -201,10 +227,12 @@ function CatalogModal({
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [quantities, setQuantities] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     if (open) {
       setSelected(new Set());
+      setQuantities(new Map());
       setSearch("");
       setActiveCategory("all");
     }
@@ -234,9 +262,30 @@ function CatalogModal({
   const toggle = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+        setQuantities((q) => {
+          const nq = new Map(q);
+          nq.delete(id);
+          return nq;
+        });
+      } else {
+        next.add(id);
+        setQuantities((q) => {
+          const nq = new Map(q);
+          nq.set(id, 1);
+          return nq;
+        });
+      }
       return next;
+    });
+  };
+
+  const setItemQty = (id: string, qty: number) => {
+    setQuantities((q) => {
+      const nq = new Map(q);
+      nq.set(id, Math.max(1, qty));
+      return nq;
     });
   };
 
@@ -248,6 +297,7 @@ function CatalogModal({
         product_key: p.product_key,
         category: p.category,
         unit: p.unit,
+        quantity: quantities.get(p.id) ?? 1,
       }));
     if (picked.length === 0) {
       onOpenChange(false);
@@ -315,6 +365,7 @@ function CatalogModal({
                   {items.map((p) => {
                     const checked = selected.has(p.id);
                     const already = existingKeys?.has(p.product_key);
+                    const qty = quantities.get(p.id) ?? 1;
                     return (
                       <li key={p.id}>
                         <button
@@ -329,6 +380,30 @@ function CatalogModal({
                         >
                           <span className="min-w-0 truncate font-medium">{p.name}</span>
                           <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {checked && !already && (
+                              <span
+                                className="flex items-center gap-1"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => setItemQty(p.id, qty - 1)}
+                                  className="rounded p-0.5 hover:bg-accent"
+                                  aria-label="Diminuir"
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </button>
+                                <span className="min-w-[1rem] text-center font-semibold tabular-nums">{qty}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setItemQty(p.id, qty + 1)}
+                                  className="rounded p-0.5 hover:bg-accent"
+                                  aria-label="Aumentar"
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </button>
+                              </span>
+                            )}
                             <span>{p.unit}</span>
                             {already ? (
                               <Check className="h-3.5 w-3.5 text-success" />
