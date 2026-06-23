@@ -71,6 +71,8 @@ export function CatalogPicker({ onAdd, existingKeys }: Props) {
       .slice(0, 8);
   }, [query, all]);
 
+  const [inlineQty, setInlineQty] = useState(1);
+
   const handlePick = async (p: CatalogProduct) => {
     setQuery("");
     setPopoverOpen(false);
@@ -80,8 +82,10 @@ export function CatalogPicker({ onAdd, existingKeys }: Props) {
         product_key: p.product_key,
         category: p.category,
         unit: p.unit,
+        quantity: inlineQty,
       },
     ]);
+    setInlineQty(1);
   };
 
   const handleAddCustom = async () => {
