@@ -303,6 +303,9 @@ function ListDetail() {
                     const first = history[0]?.price;
                     const last = history[history.length - 1]?.price;
                     const delta = first && last && first !== last ? ((last - first) / first) * 100 : 0;
+                    const itemPrices = prices.filter((p) => p.product_key === item.product_key);
+                    const maxPrice = itemPrices.length > 0 ? Math.max(...itemPrices.map((p) => p.price)) : null;
+                    const savings = best && maxPrice ? (maxPrice - best.price) * item.quantity : 0;
                     return (
                       <li key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4">
                         <div className="min-w-0 flex-1">
@@ -316,6 +319,11 @@ function ListDetail() {
                               <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium" style={{ background: `${bestMarket.color}20`, color: bestMarket.color ?? undefined }}>
                                 <Store className="h-3 w-3" /> {bestMarket.name}
                               </span>
+                              {savings > 0 && (
+                                <span className="inline-flex items-center gap-1 font-medium text-success">
+                                  <TrendingDown className="h-3 w-3" /> Economia {formatBRL(savings)}
+                                </span>
+                              )}
                               {history.length >= 2 && (
                                 <span className={`inline-flex items-center gap-1 font-medium ${delta < 0 ? "text-success" : delta > 0 ? "text-destructive" : "text-muted-foreground"}`}>
                                   {delta < 0 ? <TrendingDown className="h-3 w-3" /> : delta > 0 ? <TrendingUp className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
