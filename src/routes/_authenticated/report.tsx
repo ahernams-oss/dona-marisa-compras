@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { normalizeProductKey, formatBRL } from "@/lib/utils";
+import { normalizeProductKey, formatBRL, CATEGORIES, suggestCategory, type CategoryValue } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/report")({
   component: ReportPage,
@@ -29,6 +29,7 @@ function ReportPage() {
   const [brand, setBrand] = useState("");
   const [price, setPrice] = useState("");
   const [unit, setUnit] = useState("un");
+  const [category, setCategory] = useState<CategoryValue>("outros");
 
   useEffect(() => {
     supabase.from("markets").select("id,name,color").order("name").then(({ data }) => {
@@ -57,7 +58,10 @@ function ReportPage() {
       });
       if (!res.ok) throw new Error("Falha ao ler etiqueta");
       const data = await res.json();
-      if (data.product_name) setProductName(data.product_name);
+      if (data.product_name) {
+        setProductName(data.product_name);
+        setCategory(suggestCategory(data.product_name));
+      }
       if (data.brand) setBrand(data.brand);
       if (data.price) setPrice(String(data.price));
       if (data.unit) setUnit(data.unit);
@@ -93,6 +97,7 @@ function ReportPage() {
         brand: brand || null,
         price: Number(price),
         unit,
+        category,
         photo_url: photoUrl,
       });
       if (error) throw error;
@@ -178,7 +183,30 @@ function ReportPage() {
             <Label htmlFor="product">
               Produto {extracting && <Sparkles className="ml-1 inline h-3 w-3 text-primary" />}
             </Label>
-            <Input id="product" value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Ex: Arroz Tio João 5kg" className="mt-1.5" required />
+            <Input
+              id="product"
+              value={productName}
+              onChange={(e) => {
+                setProductName(e.target.value);
+                if (e.target.value && category === "outros") setCategory(suggestCategory(e.target.value));
+              }}
+              placeholder="Ex: Arroz Tio João 5kg"
+              className="mt-1.5"
+              required
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <Label htmlFor="category">Categoria (corredor)</Label>
+            <select
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value as CategoryValue)}
+              className="mt-1.5 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>
+              ))}
+            </select>
           </div>
           <div>
             <Label htmlFor="brand">Marca (opcional)</Label>

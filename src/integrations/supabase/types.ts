@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       list_items: {
         Row: {
+          category: string | null
           created_at: string
           id: string
           list_id: string
@@ -26,6 +27,7 @@ export type Database = {
           unit: string | null
         }
         Insert: {
+          category?: string | null
           created_at?: string
           id?: string
           list_id: string
@@ -36,6 +38,7 @@ export type Database = {
           unit?: string | null
         }
         Update: {
+          category?: string | null
           created_at?: string
           id?: string
           list_id?: string
@@ -55,6 +58,35 @@ export type Database = {
           },
         ]
       }
+      list_shares: {
+        Row: {
+          created_at: string
+          id: string
+          list_id: string
+          shared_with_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          list_id: string
+          shared_with_user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          list_id?: string
+          shared_with_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "list_shares_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "shopping_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       markets: {
         Row: {
           chain: string | null
@@ -62,6 +94,8 @@ export type Database = {
           color: string | null
           created_at: string
           id: string
+          latitude: number | null
+          longitude: number | null
           name: string
         }
         Insert: {
@@ -70,6 +104,8 @@ export type Database = {
           color?: string | null
           created_at?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           name: string
         }
         Update: {
@@ -78,6 +114,8 @@ export type Database = {
           color?: string | null
           created_at?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           name?: string
         }
         Relationships: []
@@ -85,6 +123,7 @@ export type Database = {
       price_reports: {
         Row: {
           brand: string | null
+          category: string | null
           created_at: string
           id: string
           market_id: string
@@ -97,6 +136,7 @@ export type Database = {
         }
         Insert: {
           brand?: string | null
+          category?: string | null
           created_at?: string
           id?: string
           market_id: string
@@ -109,6 +149,7 @@ export type Database = {
         }
         Update: {
           brand?: string | null
+          category?: string | null
           created_at?: string
           id?: string
           market_id?: string
@@ -182,7 +223,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      find_user_by_email: { Args: { _email: string }; Returns: string }
+      has_list_access: {
+        Args: { _list_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
