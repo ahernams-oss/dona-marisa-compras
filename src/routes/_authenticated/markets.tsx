@@ -69,6 +69,10 @@ type Market = {
   color: string | null;
   latitude: number | null;
   longitude: number | null;
+  postal_code: string | null;
+  address: string | null;
+  number: string | null;
+  neighborhood: string | null;
 };
 type Report = { market_id: string; price: number; product_name: string; created_at: string };
 
