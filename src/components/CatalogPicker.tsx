@@ -365,6 +365,7 @@ function CatalogModal({
                   {items.map((p) => {
                     const checked = selected.has(p.id);
                     const already = existingKeys?.has(p.product_key);
+                    const qty = quantities.get(p.id) ?? 1;
                     return (
                       <li key={p.id}>
                         <button
@@ -379,6 +380,30 @@ function CatalogModal({
                         >
                           <span className="min-w-0 truncate font-medium">{p.name}</span>
                           <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {checked && !already && (
+                              <span
+                                className="flex items-center gap-1"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => setItemQty(p.id, qty - 1)}
+                                  className="rounded p-0.5 hover:bg-accent"
+                                  aria-label="Diminuir"
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </button>
+                                <span className="min-w-[1rem] text-center font-semibold tabular-nums">{qty}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setItemQty(p.id, qty + 1)}
+                                  className="rounded p-0.5 hover:bg-accent"
+                                  aria-label="Aumentar"
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </button>
+                              </span>
+                            )}
                             <span>{p.unit}</span>
                             {already ? (
                               <Check className="h-3.5 w-3.5 text-success" />
