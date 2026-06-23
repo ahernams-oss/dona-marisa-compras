@@ -113,6 +113,28 @@ function ListDetail() {
     }
   };
 
+  const addFromCatalog = async (
+    picks: { product_name: string; product_key: string; category: string; unit: string }[],
+  ) => {
+    if (picks.length === 0) return;
+    const rows = picks.map((p) => ({
+      list_id: id,
+      product_name: p.product_name,
+      product_key: p.product_key,
+      quantity: 1,
+      category: p.category,
+      unit: p.unit,
+    }));
+    const { error } = await supabase.from("list_items").insert(rows);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(picks.length === 1 ? "Item adicionado" : `${picks.length} itens adicionados`);
+      load();
+    }
+  };
+
+
   const removeItem = async (itemId: string) => {
     const { error } = await supabase.from("list_items").delete().eq("id", itemId);
     if (error) toast.error(error.message);
