@@ -9,38 +9,138 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiExtractPriceRouteImport } from './routes/api/extract-price'
+import { Route as AuthenticatedReportRouteImport } from './routes/_authenticated/report'
+import { Route as AuthenticatedMarketsRouteImport } from './routes/_authenticated/markets'
+import { Route as AuthenticatedListsRouteImport } from './routes/_authenticated/lists'
+import { Route as AuthenticatedListsIdRouteImport } from './routes/_authenticated/lists.$id'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiExtractPriceRoute = ApiExtractPriceRouteImport.update({
+  id: '/api/extract-price',
+  path: '/api/extract-price',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedReportRoute = AuthenticatedReportRouteImport.update({
+  id: '/report',
+  path: '/report',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedMarketsRoute = AuthenticatedMarketsRouteImport.update({
+  id: '/markets',
+  path: '/markets',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedListsRoute = AuthenticatedListsRouteImport.update({
+  id: '/lists',
+  path: '/lists',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedListsIdRoute = AuthenticatedListsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedListsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/lists': typeof AuthenticatedListsRouteWithChildren
+  '/markets': typeof AuthenticatedMarketsRoute
+  '/report': typeof AuthenticatedReportRoute
+  '/api/extract-price': typeof ApiExtractPriceRoute
+  '/lists/$id': typeof AuthenticatedListsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/lists': typeof AuthenticatedListsRouteWithChildren
+  '/markets': typeof AuthenticatedMarketsRoute
+  '/report': typeof AuthenticatedReportRoute
+  '/api/extract-price': typeof ApiExtractPriceRoute
+  '/lists/$id': typeof AuthenticatedListsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/lists': typeof AuthenticatedListsRouteWithChildren
+  '/_authenticated/markets': typeof AuthenticatedMarketsRoute
+  '/_authenticated/report': typeof AuthenticatedReportRoute
+  '/api/extract-price': typeof ApiExtractPriceRoute
+  '/_authenticated/lists/$id': typeof AuthenticatedListsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/lists'
+    | '/markets'
+    | '/report'
+    | '/api/extract-price'
+    | '/lists/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/lists'
+    | '/markets'
+    | '/report'
+    | '/api/extract-price'
+    | '/lists/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/lists'
+    | '/_authenticated/markets'
+    | '/_authenticated/report'
+    | '/api/extract-price'
+    | '/_authenticated/lists/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  ApiExtractPriceRoute: typeof ApiExtractPriceRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +148,76 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/extract-price': {
+      id: '/api/extract-price'
+      path: '/api/extract-price'
+      fullPath: '/api/extract-price'
+      preLoaderRoute: typeof ApiExtractPriceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/report': {
+      id: '/_authenticated/report'
+      path: '/report'
+      fullPath: '/report'
+      preLoaderRoute: typeof AuthenticatedReportRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/markets': {
+      id: '/_authenticated/markets'
+      path: '/markets'
+      fullPath: '/markets'
+      preLoaderRoute: typeof AuthenticatedMarketsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/lists': {
+      id: '/_authenticated/lists'
+      path: '/lists'
+      fullPath: '/lists'
+      preLoaderRoute: typeof AuthenticatedListsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/lists/$id': {
+      id: '/_authenticated/lists/$id'
+      path: '/$id'
+      fullPath: '/lists/$id'
+      preLoaderRoute: typeof AuthenticatedListsIdRouteImport
+      parentRoute: typeof AuthenticatedListsRoute
+    }
   }
 }
 
+interface AuthenticatedListsRouteChildren {
+  AuthenticatedListsIdRoute: typeof AuthenticatedListsIdRoute
+}
+
+const AuthenticatedListsRouteChildren: AuthenticatedListsRouteChildren = {
+  AuthenticatedListsIdRoute: AuthenticatedListsIdRoute,
+}
+
+const AuthenticatedListsRouteWithChildren =
+  AuthenticatedListsRoute._addFileChildren(AuthenticatedListsRouteChildren)
+
+interface AuthenticatedRouteChildren {
+  AuthenticatedListsRoute: typeof AuthenticatedListsRouteWithChildren
+  AuthenticatedMarketsRoute: typeof AuthenticatedMarketsRoute
+  AuthenticatedReportRoute: typeof AuthenticatedReportRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedListsRoute: AuthenticatedListsRouteWithChildren,
+  AuthenticatedMarketsRoute: AuthenticatedMarketsRoute,
+  AuthenticatedReportRoute: AuthenticatedReportRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AuthRoute: AuthRoute,
+  ApiExtractPriceRoute: ApiExtractPriceRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
