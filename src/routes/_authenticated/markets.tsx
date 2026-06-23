@@ -285,7 +285,8 @@ function MarketDialog({
     const payload = {
       name: trimmed,
       chain: chain.trim() || null,
-      city: city.trim() || null,
+      state: state || null,
+      city: city || null,
       color,
       latitude: lat.trim() ? Number(lat) : null,
       longitude: lng.trim() ? Number(lng) : null,
