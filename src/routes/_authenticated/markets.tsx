@@ -271,14 +271,39 @@ function MarketDialog({
     }
     let cancelled = false;
     setLoadingCities(true);
-    fetch(`https://servicodadosabertos.ibge.gov.br/api/v1/localidades/estados/${state}/municipios`)
-      .then((r) => r.json())
-      .then((data: { nome: string }[]) => {
+
+    const fetchFromIbge = () =>
+      fetch(`https://servicodadosabertos.ibge.gov.br/api/v1/localidades/estados/${state}/municipios`)
+        .then((r) => {
+          if (!r.ok) throw new Error("ibge");
+          return r.json();
+        })
+        .then((data: { nome: string }[]) => data.map((d) => d.nome));
+
+    const fetchFromBrasilApi = () =>
+      fetch(`https://brasilapi.com.br/api/ibge/municipios/v1/${state}?providers=dados-abertos-br,gov,wikipedia`)
+        .then((r) => {
+          if (!r.ok) throw new Error("brasilapi");
+          return r.json();
+        })
+        .then((data: { nome: string }[]) => data.map((d) => d.nome));
+
+    fetchFromIbge()
+      .catch(() => fetchFromBrasilApi())
+      .then((names) => {
         if (cancelled) return;
-        setCities(data.map((d) => d.nome).sort((a, b) => a.localeCompare(b, "pt-BR")));
+        const unique = Array.from(new Set(names.map((n) => n.toLocaleUpperCase("pt-BR"))))
+          .map((n) => n.charAt(0) + n.slice(1).toLocaleLowerCase("pt-BR"));
+        setCities(unique.sort((a, b) => a.localeCompare(b, "pt-BR")));
       })
-      .catch(() => !cancelled && setCities([]))
+      .catch(() => {
+        if (!cancelled) {
+          setCities([]);
+          toast.error("Não foi possível carregar as cidades. Verifique sua conexão.");
+        }
+      })
       .finally(() => !cancelled && setLoadingCities(false));
+
     return () => {
       cancelled = true;
     };
