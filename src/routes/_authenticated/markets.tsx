@@ -415,6 +415,29 @@ function MarketDialog({
               placeholder="Ex.: Carrefour"
             />
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="m-cep">CEP</Label>
+            <div className="flex gap-2">
+              <Input
+                id="m-cep"
+                value={postalCode}
+                onChange={(e) => setPostalCode(e.target.value)}
+                placeholder="00000-000"
+                maxLength={9}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCepLookup}
+                disabled={lookingUpCep}
+              >
+                {lookingUpCep ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                Buscar
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Preenche automaticamente estado, cidade, bairro e logradouro.
+            </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="m-state">Estado</Label>
