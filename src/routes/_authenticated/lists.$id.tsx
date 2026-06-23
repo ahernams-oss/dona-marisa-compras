@@ -468,8 +468,6 @@ function ListDetail() {
           </DialogHeader>
           {historyFor && <HistoryView item={historyFor} prices={prices} markets={markets} />}
         </DialogContent>
-        {/* hidden trigger keeps types happy */}
-        <DialogTrigger asChild><span className="hidden" /></DialogTrigger>
       </Dialog>
     </div>
   );
