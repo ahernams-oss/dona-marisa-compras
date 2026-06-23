@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2, Share2, Trash2, X, UserPlus } from "lucide-react";
+import { Loader2, Share2, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
