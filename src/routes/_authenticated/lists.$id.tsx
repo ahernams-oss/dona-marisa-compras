@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ShareListDialog } from "@/components/ShareListDialog";
 import { PriceSparkline } from "@/components/PriceSparkline";
 import { CatalogPicker } from "@/components/CatalogPicker";
-import { formatBRL, normalizeProductKey, CATEGORIES, getCategory, suggestCategory, haversineKm, type CategoryValue } from "@/lib/utils";
+import { formatBRL, getCategory, haversineKm } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/lists/$id")({
   component: ListDetail,
