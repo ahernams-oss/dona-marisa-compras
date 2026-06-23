@@ -303,6 +303,9 @@ function ListDetail() {
                     const first = history[0]?.price;
                     const last = history[history.length - 1]?.price;
                     const delta = first && last && first !== last ? ((last - first) / first) * 100 : 0;
+                    const itemPrices = prices.filter((p) => p.product_key === item.product_key);
+                    const maxPrice = itemPrices.length > 0 ? Math.max(...itemPrices.map((p) => p.price)) : null;
+                    const savings = best && maxPrice ? (maxPrice - best.price) * item.quantity : 0;
                     return (
                       <li key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4">
                         <div className="min-w-0 flex-1">
