@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Store, Plus, Pencil, Trash2 } from "lucide-react";
+import { Store, Plus, Pencil, Trash2, Search, MapPin, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -69,6 +69,10 @@ type Market = {
   color: string | null;
   latitude: number | null;
   longitude: number | null;
+  postal_code: string | null;
+  address: string | null;
+  number: string | null;
+  neighborhood: string | null;
 };
 type Report = { market_id: string; price: number; product_name: string; created_at: string };
 
@@ -236,7 +240,13 @@ function MarketDialog({
   const [color, setColor] = useState(COLORS[0]);
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [address, setAddress] = useState("");
+  const [number, setNumber] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
   const [saving, setSaving] = useState(false);
+  const [lookingUpCep, setLookingUpCep] = useState(false);
+  const [locating, setLocating] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -247,6 +257,10 @@ function MarketDialog({
       setColor(market?.color ?? COLORS[0]);
       setLat(market?.latitude != null ? String(market.latitude) : "");
       setLng(market?.longitude != null ? String(market.longitude) : "");
+      setPostalCode(market?.postal_code ?? "");
+      setAddress(market?.address ?? "");
+      setNumber(market?.number ?? "");
+      setNeighborhood(market?.neighborhood ?? "");
     }
   }, [open, market]);
 
@@ -270,6 +284,72 @@ function MarketDialog({
     };
   }, [state]);
 
+  async function handleCepLookup() {
+    const cep = postalCode.replace(/\D/g, "");
+    if (cep.length !== 8) {
+      toast.error("Informe um CEP válido (8 dígitos)");
+      return;
+    }
+    setLookingUpCep(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await res.json();
+      if (data?.erro) {
+        toast.error("CEP não encontrado");
+        return;
+      }
+      if (data.uf) setState(data.uf);
+      if (data.logradouro) setAddress(data.logradouro);
+      if (data.bairro) setNeighborhood(data.bairro);
+      if (data.localidade) setCity(data.localidade);
+      toast.success("Endereço preenchido");
+    } catch {
+      toast.error("Falha ao consultar CEP");
+    } finally {
+      setLookingUpCep(false);
+    }
+  }
+
+  async function handleUseLocation() {
+    if (!navigator.geolocation) {
+      toast.error("Geolocalização não suportada");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const la = pos.coords.latitude;
+        const lo = pos.coords.longitude;
+        setLat(String(la.toFixed(6)));
+        setLng(String(lo.toFixed(6)));
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${la}&lon=${lo}&accept-language=pt-BR`,
+          );
+          const data = await res.json();
+          const a = data?.address ?? {};
+          if (a.postcode) setPostalCode(a.postcode);
+          if (a.road) setAddress(a.road);
+          if (a.house_number) setNumber(a.house_number);
+          if (a.suburb || a.neighbourhood) setNeighborhood(a.suburb ?? a.neighbourhood);
+          const uf = (a["ISO3166-2-lvl4"] ?? "").replace("BR-", "");
+          if (uf) setState(uf);
+          if (a.city || a.town || a.village) setCity(a.city ?? a.town ?? a.village);
+          toast.success("Localização capturada");
+        } catch {
+          toast.success("Coordenadas capturadas");
+        } finally {
+          setLocating(false);
+        }
+      },
+      (err) => {
+        setLocating(false);
+        toast.error(err.message || "Não foi possível obter a localização");
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = name.trim();
@@ -290,6 +370,10 @@ function MarketDialog({
       color,
       latitude: lat.trim() ? Number(lat) : null,
       longitude: lng.trim() ? Number(lng) : null,
+      postal_code: postalCode.trim() || null,
+      address: address.trim() || null,
+      number: number.trim() || null,
+      neighborhood: neighborhood.trim() || null,
     };
     const op = market
       ? supabase.from("markets").update(payload).eq("id", market.id)
@@ -330,6 +414,30 @@ function MarketDialog({
               maxLength={80}
               placeholder="Ex.: Carrefour"
             />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="m-cep">CEP</Label>
+            <div className="flex gap-2">
+              <Input
+                id="m-cep"
+                value={postalCode}
+                onChange={(e) => setPostalCode(e.target.value)}
+                placeholder="00000-000"
+                maxLength={9}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCepLookup}
+                disabled={lookingUpCep}
+              >
+                {lookingUpCep ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                Buscar
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Preenche automaticamente estado, cidade, bairro e logradouro.
+            </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -384,23 +492,61 @@ function MarketDialog({
               </Select>
             </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-[1fr_120px_1fr]">
             <div className="space-y-1.5">
-              <Label htmlFor="m-lat">Latitude</Label>
+              <Label htmlFor="m-address">Logradouro</Label>
+              <Input
+                id="m-address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Rua, avenida…"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="m-number">Número</Label>
+              <Input
+                id="m-number"
+                value={number}
+                onChange={(e) => setNumber(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="m-neigh">Bairro</Label>
+              <Input
+                id="m-neigh"
+                value={neighborhood}
+                onChange={(e) => setNeighborhood(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label>Coordenadas</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleUseLocation}
+                disabled={locating}
+              >
+                {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
+                Usar minha localização
+              </Button>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
               <Input
                 id="m-lat"
                 type="number"
                 step="any"
+                placeholder="Latitude"
                 value={lat}
                 onChange={(e) => setLat(e.target.value)}
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="m-lng">Longitude</Label>
               <Input
                 id="m-lng"
                 type="number"
                 step="any"
+                placeholder="Longitude"
                 value={lng}
                 onChange={(e) => setLng(e.target.value)}
               />
