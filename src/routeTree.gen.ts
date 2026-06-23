@@ -16,6 +16,7 @@ import { Route as ApiExtractPriceRouteImport } from './routes/api/extract-price'
 import { Route as AuthenticatedReportRouteImport } from './routes/_authenticated/report'
 import { Route as AuthenticatedMarketsRouteImport } from './routes/_authenticated/markets'
 import { Route as AuthenticatedListsRouteImport } from './routes/_authenticated/lists'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedListsIdRouteImport } from './routes/_authenticated/lists.$id'
 
 const AuthRoute = AuthRouteImport.update({
@@ -52,6 +53,11 @@ const AuthenticatedListsRoute = AuthenticatedListsRouteImport.update({
   path: '/lists',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedListsIdRoute = AuthenticatedListsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -61,6 +67,7 @@ const AuthenticatedListsIdRoute = AuthenticatedListsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/lists': typeof AuthenticatedListsRouteWithChildren
   '/markets': typeof AuthenticatedMarketsRoute
   '/report': typeof AuthenticatedReportRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/lists': typeof AuthenticatedListsRouteWithChildren
   '/markets': typeof AuthenticatedMarketsRoute
   '/report': typeof AuthenticatedReportRoute
@@ -81,6 +89,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/lists': typeof AuthenticatedListsRouteWithChildren
   '/_authenticated/markets': typeof AuthenticatedMarketsRoute
   '/_authenticated/report': typeof AuthenticatedReportRoute
@@ -92,6 +101,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/admin'
     | '/lists'
     | '/markets'
     | '/report'
@@ -101,6 +111,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/admin'
     | '/lists'
     | '/markets'
     | '/report'
@@ -111,6 +122,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/admin'
     | '/_authenticated/lists'
     | '/_authenticated/markets'
     | '/_authenticated/report'
@@ -176,6 +188,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedListsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/lists/$id': {
       id: '/_authenticated/lists/$id'
       path: '/$id'
@@ -198,12 +217,14 @@ const AuthenticatedListsRouteWithChildren =
   AuthenticatedListsRoute._addFileChildren(AuthenticatedListsRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedListsRoute: typeof AuthenticatedListsRouteWithChildren
   AuthenticatedMarketsRoute: typeof AuthenticatedMarketsRoute
   AuthenticatedReportRoute: typeof AuthenticatedReportRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedListsRoute: AuthenticatedListsRouteWithChildren,
   AuthenticatedMarketsRoute: AuthenticatedMarketsRoute,
   AuthenticatedReportRoute: AuthenticatedReportRoute,
