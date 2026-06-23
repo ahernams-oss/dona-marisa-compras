@@ -90,19 +90,41 @@ function ListDetail() {
     picks: { product_name: string; product_key: string; category: string; unit: string }[],
   ) => {
     if (picks.length === 0) return;
-    const rows = picks.map((p) => ({
-      list_id: id,
-      product_name: p.product_name,
-      product_key: p.product_key,
-      quantity: 1,
-      category: p.category,
-      unit: p.unit,
-    }));
-    const { error } = await supabase.from("list_items").insert(rows);
-    if (error) {
-      toast.error(error.message);
+    const existingByKey = new Map(items.map((i) => [i.product_key, i]));
+    const toInsert: typeof picks = [];
+    const toUpdate: { id: string; quantity: number }[] = [];
+    for (const p of picks) {
+      const existing = existingByKey.get(p.product_key);
+      if (existing) {
+        toUpdate.push({ id: existing.id, quantity: existing.quantity + 1 });
+      } else {
+        toInsert.push(p);
+      }
+    }
+    const errors: string[] = [];
+    if (toInsert.length > 0) {
+      const rows = toInsert.map((p) => ({
+        list_id: id,
+        product_name: p.product_name,
+        product_key: p.product_key,
+        quantity: 1,
+        category: p.category,
+        unit: p.unit,
+      }));
+      const { error } = await supabase.from("list_items").insert(rows);
+      if (error) errors.push(error.message);
+    }
+    for (const u of toUpdate) {
+      const { error } = await supabase.from("list_items").update({ quantity: u.quantity }).eq("id", u.id);
+      if (error) errors.push(error.message);
+    }
+    if (errors.length > 0) {
+      toast.error(errors[0]);
     } else {
-      toast.success(picks.length === 1 ? "Item adicionado" : `${picks.length} itens adicionados`);
+      const parts: string[] = [];
+      if (toInsert.length > 0) parts.push(`${toInsert.length} adicionado${toInsert.length > 1 ? "s" : ""}`);
+      if (toUpdate.length > 0) parts.push(`${toUpdate.length} já na lista — quantidade atualizada`);
+      toast.success(parts.join(" · "));
       load();
     }
   };
