@@ -146,5 +146,3 @@ export function ShareListDialog({ listId, isOwner }: Props) {
   );
 }
 
-// avoid unused import warning if not used elsewhere
-void X;
