@@ -297,6 +297,7 @@ function CatalogModal({
         product_key: p.product_key,
         category: p.category,
         unit: p.unit,
+        quantity: quantities.get(p.id) ?? 1,
       }));
     if (picked.length === 0) {
       onOpenChange(false);
