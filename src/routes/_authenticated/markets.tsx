@@ -438,6 +438,7 @@ function MarketDialog({
             <p className="text-xs text-muted-foreground">
               Preenche automaticamente estado, cidade, bairro e logradouro.
             </p>
+          </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="m-state">Estado</Label>
