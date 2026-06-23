@@ -321,25 +321,67 @@ function MarketDialog({
               required
             />
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="m-chain">Rede</Label>
+            <Input
+              id="m-chain"
+              value={chain}
+              onChange={(e) => setChain(e.target.value)}
+              maxLength={80}
+              placeholder="Ex.: Carrefour"
+            />
+          </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="m-chain">Rede</Label>
-              <Input
-                id="m-chain"
-                value={chain}
-                onChange={(e) => setChain(e.target.value)}
-                maxLength={80}
-                placeholder="Ex.: Carrefour"
-              />
+              <Label htmlFor="m-state">Estado</Label>
+              <Select
+                value={state}
+                onValueChange={(v) => {
+                  setState(v);
+                  setCity("");
+                }}
+              >
+                <SelectTrigger id="m-state">
+                  <SelectValue placeholder="Selecione o estado" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {BR_STATES.map((s) => (
+                    <SelectItem key={s.uf} value={s.uf}>
+                      {s.uf} — {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="m-city">Cidade</Label>
-              <Input
-                id="m-city"
+              <Select
                 value={city}
-                onChange={(e) => setCity(e.target.value)}
-                maxLength={80}
-              />
+                onValueChange={setCity}
+                disabled={!state || loadingCities}
+              >
+                <SelectTrigger id="m-city">
+                  <SelectValue
+                    placeholder={
+                      !state
+                        ? "Selecione um estado"
+                        : loadingCities
+                          ? "Carregando…"
+                          : "Selecione a cidade"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {city && !cities.includes(city) && (
+                    <SelectItem value={city}>{city}</SelectItem>
+                  )}
+                  {cities.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
