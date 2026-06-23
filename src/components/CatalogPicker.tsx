@@ -227,10 +227,12 @@ function CatalogModal({
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [quantities, setQuantities] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     if (open) {
       setSelected(new Set());
+      setQuantities(new Map());
       setSearch("");
       setActiveCategory("all");
     }
@@ -260,9 +262,30 @@ function CatalogModal({
   const toggle = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+        setQuantities((q) => {
+          const nq = new Map(q);
+          nq.delete(id);
+          return nq;
+        });
+      } else {
+        next.add(id);
+        setQuantities((q) => {
+          const nq = new Map(q);
+          nq.set(id, 1);
+          return nq;
+        });
+      }
       return next;
+    });
+  };
+
+  const setItemQty = (id: string, qty: number) => {
+    setQuantities((q) => {
+      const nq = new Map(q);
+      nq.set(id, Math.max(1, qty));
+      return nq;
     });
   };
 
