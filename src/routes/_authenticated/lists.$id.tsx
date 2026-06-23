@@ -277,35 +277,11 @@ function ListDetail() {
         </div>
       </div>
 
-      {/* Add items with category */}
-      <form onSubmit={addItem} className="flex flex-wrap gap-2 rounded-2xl border border-border bg-card p-3 shadow-soft">
-        <Input
-          value={newItem}
-          onChange={(e) => setNewItem(e.target.value)}
-          placeholder="Adicionar item (ex: arroz 5kg)"
-          className="min-w-0 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0"
-        />
-        <select
-          value={newCategory}
-          onChange={(e) => setNewCategory(e.target.value as CategoryValue)}
-          className="h-10 rounded-md border border-input bg-background px-2 text-sm"
-          aria-label="Categoria"
-        >
-          {CATEGORIES.map((c) => (
-            <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>
-          ))}
-        </select>
-        <Input
-          type="number"
-          min={1}
-          value={newQty}
-          onChange={(e) => setNewQty(e.target.value)}
-          className="w-20"
-        />
-        <Button type="submit" className="rounded-full">
-          <Plus className="mr-1 h-4 w-4" /> Adicionar
-        </Button>
-      </form>
+      {/* Add items from catalog (inline autocomplete + browse modal) */}
+      <CatalogPicker
+        onAdd={addFromCatalog}
+        existingKeys={new Set(items.map((i) => i.product_key))}
+      />
 
       {/* Items grouped by category + savings sidebar */}
       <div className="grid gap-6 lg:grid-cols-3">
