@@ -156,7 +156,7 @@ function MarketsPage() {
                   <div>
                     <h3 className="font-display text-lg font-bold leading-tight">{m.name}</h3>
                     <p className="text-xs text-muted-foreground">
-                      {[m.chain, m.city].filter(Boolean).join(" • ") || "—"}
+                      {[m.chain, [m.city, m.state].filter(Boolean).join("/")].filter(Boolean).join(" • ") || "—"}
                     </p>
                   </div>
                 </div>
