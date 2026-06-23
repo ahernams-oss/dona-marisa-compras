@@ -6,7 +6,7 @@ import heroImg from "@/assets/hero.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dona Maria — economize na lista de compras" },
+      { title: "Dona Marisa — economize na lista de compras" },
       {
         name: "description",
         content:
@@ -27,7 +27,7 @@ function Landing() {
           <div className="relative mx-auto grid max-w-6xl gap-12 px-4 py-16 md:grid-cols-2 md:items-center md:py-24">
             <div>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground">
-                <Sparkles className="h-3.5 w-3.5" /> Feito pra Dona Maria
+                <Sparkles className="h-3.5 w-3.5" /> Feito pra Dona Marisa
               </span>
               <h1 className="mt-5 font-display text-4xl font-extrabold leading-tight tracking-tight md:text-6xl">
                 Sua lista de compras pelo <span className="text-gradient">menor preço</span> em cada mercado.
@@ -102,10 +102,10 @@ function Landing() {
             <div className="flex flex-wrap items-center justify-between gap-6">
               <div>
                 <h2 className="font-display text-2xl font-bold md:text-3xl">
-                  Comunidade Dona Maria
+                  Comunidade Dona Marisa
                 </h2>
                 <p className="mt-2 max-w-xl text-sm text-background/70">
-                  Cada preço reportado por uma Dona Maria ajuda outras a economizarem.
+                  Cada preço reportado por uma Dona Marisa ajuda outras a economizarem.
                   Junte-se e contribua com sua quebrada.
                 </p>
               </div>

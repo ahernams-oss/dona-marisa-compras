@@ -79,14 +79,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Dona Maria — economize comparando preços entre mercados" },
+      { title: "Dona Marisa — economize comparando preços entre mercados" },
       {
         name: "description",
         content:
           "Crie sua lista de compras, compare preços reportados pela comunidade em vários mercados e descubra onde economizar — inclusive considerando o frete.",
       },
-      { name: "author", content: "Dona Maria" },
-      { property: "og:title", content: "Dona Maria — sua lista, o melhor preço" },
+      { name: "author", content: "Dona Marisa" },
+      { property: "og:title", content: "Dona Marisa — sua lista, o melhor preço" },
       {
         property: "og:description",
         content:
