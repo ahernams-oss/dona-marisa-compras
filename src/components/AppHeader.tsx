@@ -14,7 +14,7 @@ export function AppHeader() {
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-soft">
             <ShoppingBasket className="h-5 w-5" />
           </span>
-          <span className="font-display text-lg font-bold tracking-tight">Dona Maria</span>
+          <span className="font-display text-lg font-bold tracking-tight">Dona Marisa</span>
         </Link>
 
         {user ? (

@@ -50,7 +50,7 @@ export function ShareListDialog({ listId, isOwner }: Props) {
       const { data: userId, error: rpcErr } = await supabase.rpc("find_user_by_email", { _email: email.trim() });
       if (rpcErr) throw rpcErr;
       if (!userId) {
-        toast.error("Nenhuma usuária Dona Maria com esse e-mail. Peça pra ela criar conta primeiro 💜");
+        toast.error("Nenhuma usuária Dona Marisa com esse e-mail. Peça pra ela criar conta primeiro 💜");
         return;
       }
       const { error } = await supabase.from("list_shares").insert({ list_id: listId, shared_with_user_id: userId });
@@ -126,7 +126,7 @@ export function ShareListDialog({ listId, isOwner }: Props) {
             <ul className="mt-2 divide-y divide-border">
               {shares.map((s) => (
                 <li key={s.id} className="flex items-center justify-between py-2 text-sm">
-                  <span>{s.full_name ?? "Dona Maria"}</span>
+                  <span>{s.full_name ?? "Dona Marisa"}</span>
                   {isOwner && (
                     <button
                       onClick={() => remove(s.id)}

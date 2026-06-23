@@ -12,8 +12,8 @@ import { useAuth } from "@/hooks/use-auth";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Entrar — Dona Maria" },
-      { name: "description", content: "Entre ou crie sua conta na Dona Maria para começar a economizar." },
+      { title: "Entrar — Dona Marisa" },
+      { name: "description", content: "Entre ou crie sua conta na Dona Marisa para começar a economizar." },
     ],
   }),
   component: AuthPage,
@@ -87,7 +87,7 @@ function AuthPage() {
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary text-primary-foreground shadow-glow">
             <ShoppingBasket className="h-5 w-5" />
           </span>
-          <span className="font-display text-xl font-bold">Dona Maria</span>
+          <span className="font-display text-xl font-bold">Dona Marisa</span>
         </Link>
 
         <div className="rounded-3xl border border-border bg-card p-8 shadow-soft">
