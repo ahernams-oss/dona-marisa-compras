@@ -11,7 +11,7 @@ export function PriceSparkline({ data, width = 96, height = 28 }: Props) {
   if (data.length < 2) {
     return (
       <svg width={width} height={height} aria-hidden="true">
-        <line x1={0} y1={height / 2} x2={width} y2={height / 2} stroke="hsl(var(--muted-foreground))" strokeWidth={1} strokeDasharray="2 3" opacity={0.4} />
+        <line x1={0} y1={height / 2} x2={width} y2={height / 2} stroke="var(--muted-foreground)" strokeWidth={1} strokeDasharray="2 3" opacity={0.4} />
       </svg>
     );
   }
