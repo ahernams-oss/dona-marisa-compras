@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { normalizeProductKey, formatBRL } from "@/lib/utils";
+import { normalizeProductKey, formatBRL, CATEGORIES, suggestCategory, type CategoryValue } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/report")({
   component: ReportPage,
@@ -29,6 +29,7 @@ function ReportPage() {
   const [brand, setBrand] = useState("");
   const [price, setPrice] = useState("");
   const [unit, setUnit] = useState("un");
+  const [category, setCategory] = useState<CategoryValue>("outros");
 
   useEffect(() => {
     supabase.from("markets").select("id,name,color").order("name").then(({ data }) => {
@@ -57,7 +58,10 @@ function ReportPage() {
       });
       if (!res.ok) throw new Error("Falha ao ler etiqueta");
       const data = await res.json();
-      if (data.product_name) setProductName(data.product_name);
+      if (data.product_name) {
+        setProductName(data.product_name);
+        setCategory(suggestCategory(data.product_name));
+      }
       if (data.brand) setBrand(data.brand);
       if (data.price) setPrice(String(data.price));
       if (data.unit) setUnit(data.unit);
@@ -93,6 +97,7 @@ function ReportPage() {
         brand: brand || null,
         price: Number(price),
         unit,
+        category,
         photo_url: photoUrl,
       });
       if (error) throw error;
