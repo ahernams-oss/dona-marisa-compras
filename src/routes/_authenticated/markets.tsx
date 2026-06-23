@@ -240,7 +240,13 @@ function MarketDialog({
   const [color, setColor] = useState(COLORS[0]);
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [address, setAddress] = useState("");
+  const [number, setNumber] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
   const [saving, setSaving] = useState(false);
+  const [lookingUpCep, setLookingUpCep] = useState(false);
+  const [locating, setLocating] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -251,6 +257,10 @@ function MarketDialog({
       setColor(market?.color ?? COLORS[0]);
       setLat(market?.latitude != null ? String(market.latitude) : "");
       setLng(market?.longitude != null ? String(market.longitude) : "");
+      setPostalCode(market?.postal_code ?? "");
+      setAddress(market?.address ?? "");
+      setNumber(market?.number ?? "");
+      setNeighborhood(market?.neighborhood ?? "");
     }
   }, [open, market]);
 
@@ -274,6 +284,72 @@ function MarketDialog({
     };
   }, [state]);
 
+  async function handleCepLookup() {
+    const cep = postalCode.replace(/\D/g, "");
+    if (cep.length !== 8) {
+      toast.error("Informe um CEP válido (8 dígitos)");
+      return;
+    }
+    setLookingUpCep(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await res.json();
+      if (data?.erro) {
+        toast.error("CEP não encontrado");
+        return;
+      }
+      if (data.uf) setState(data.uf);
+      if (data.logradouro) setAddress(data.logradouro);
+      if (data.bairro) setNeighborhood(data.bairro);
+      if (data.localidade) setCity(data.localidade);
+      toast.success("Endereço preenchido");
+    } catch {
+      toast.error("Falha ao consultar CEP");
+    } finally {
+      setLookingUpCep(false);
+    }
+  }
+
+  async function handleUseLocation() {
+    if (!navigator.geolocation) {
+      toast.error("Geolocalização não suportada");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const la = pos.coords.latitude;
+        const lo = pos.coords.longitude;
+        setLat(String(la.toFixed(6)));
+        setLng(String(lo.toFixed(6)));
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${la}&lon=${lo}&accept-language=pt-BR`,
+          );
+          const data = await res.json();
+          const a = data?.address ?? {};
+          if (a.postcode) setPostalCode(a.postcode);
+          if (a.road) setAddress(a.road);
+          if (a.house_number) setNumber(a.house_number);
+          if (a.suburb || a.neighbourhood) setNeighborhood(a.suburb ?? a.neighbourhood);
+          const uf = (a["ISO3166-2-lvl4"] ?? "").replace("BR-", "");
+          if (uf) setState(uf);
+          if (a.city || a.town || a.village) setCity(a.city ?? a.town ?? a.village);
+          toast.success("Localização capturada");
+        } catch {
+          toast.success("Coordenadas capturadas");
+        } finally {
+          setLocating(false);
+        }
+      },
+      (err) => {
+        setLocating(false);
+        toast.error(err.message || "Não foi possível obter a localização");
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = name.trim();
@@ -294,6 +370,10 @@ function MarketDialog({
       color,
       latitude: lat.trim() ? Number(lat) : null,
       longitude: lng.trim() ? Number(lng) : null,
+      postal_code: postalCode.trim() || null,
+      address: address.trim() || null,
+      number: number.trim() || null,
+      neighborhood: neighborhood.trim() || null,
     };
     const op = market
       ? supabase.from("markets").update(payload).eq("id", market.id)
