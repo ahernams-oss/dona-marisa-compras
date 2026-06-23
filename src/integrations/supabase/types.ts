@@ -185,6 +185,33 @@ export type Database = {
           },
         ]
       }
+      product_catalog: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          name: string
+          product_key: string
+          unit: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          name: string
+          product_key: string
+          unit?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          name?: string
+          product_key?: string
+          unit?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           city: string | null
@@ -275,6 +302,8 @@ export type Database = {
         Args: { _list_id: string; _user_id: string }
         Returns: boolean
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       app_role: "admin" | "user"

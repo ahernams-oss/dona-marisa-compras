@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, ArrowLeft, Truck, TrendingDown, Camera, Store, MapPin, History, TrendingUp, Minus } from "lucide-react";
+import { Trash2, ArrowLeft, Truck, TrendingDown, Camera, Store, MapPin, History, TrendingUp, Minus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ShareListDialog } from "@/components/ShareListDialog";
 import { PriceSparkline } from "@/components/PriceSparkline";
-import { formatBRL, normalizeProductKey, CATEGORIES, getCategory, suggestCategory, haversineKm, type CategoryValue } from "@/lib/utils";
+import { CatalogPicker } from "@/components/CatalogPicker";
+import { formatBRL, getCategory, haversineKm } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/lists/$id")({
   component: ListDetail,
@@ -52,9 +53,6 @@ function ListDetail() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [prices, setPrices] = useState<PriceReport[]>([]);
   const [freight, setFreight] = useState<Record<string, number>>({});
-  const [newItem, setNewItem] = useState("");
-  const [newQty, setNewQty] = useState("1");
-  const [newCategory, setNewCategory] = useState<CategoryValue>("outros");
   const [historyFor, setHistoryFor] = useState<Item | null>(null);
 
   const isOwner = !!user && !!list && list.user_id === user.id;
@@ -87,30 +85,28 @@ function ListDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // suggest category from product name typed
-  useEffect(() => {
-    if (newItem.trim()) setNewCategory(suggestCategory(newItem));
-  }, [newItem]);
 
-  const addItem = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newItem.trim()) return;
-    const qty = Math.max(1, Number(newQty) || 1);
-    const { error } = await supabase.from("list_items").insert({
+  const addFromCatalog = async (
+    picks: { product_name: string; product_key: string; category: string; unit: string }[],
+  ) => {
+    if (picks.length === 0) return;
+    const rows = picks.map((p) => ({
       list_id: id,
-      product_name: newItem.trim(),
-      product_key: normalizeProductKey(newItem),
-      quantity: qty,
-      category: newCategory,
-    });
-    if (error) toast.error(error.message);
-    else {
-      setNewItem("");
-      setNewQty("1");
-      setNewCategory("outros");
+      product_name: p.product_name,
+      product_key: p.product_key,
+      quantity: 1,
+      category: p.category,
+      unit: p.unit,
+    }));
+    const { error } = await supabase.from("list_items").insert(rows);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(picks.length === 1 ? "Item adicionado" : `${picks.length} itens adicionados`);
       load();
     }
   };
+
 
   const removeItem = async (itemId: string) => {
     const { error } = await supabase.from("list_items").delete().eq("id", itemId);
@@ -254,35 +250,11 @@ function ListDetail() {
         </div>
       </div>
 
-      {/* Add items with category */}
-      <form onSubmit={addItem} className="flex flex-wrap gap-2 rounded-2xl border border-border bg-card p-3 shadow-soft">
-        <Input
-          value={newItem}
-          onChange={(e) => setNewItem(e.target.value)}
-          placeholder="Adicionar item (ex: arroz 5kg)"
-          className="min-w-0 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0"
-        />
-        <select
-          value={newCategory}
-          onChange={(e) => setNewCategory(e.target.value as CategoryValue)}
-          className="h-10 rounded-md border border-input bg-background px-2 text-sm"
-          aria-label="Categoria"
-        >
-          {CATEGORIES.map((c) => (
-            <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>
-          ))}
-        </select>
-        <Input
-          type="number"
-          min={1}
-          value={newQty}
-          onChange={(e) => setNewQty(e.target.value)}
-          className="w-20"
-        />
-        <Button type="submit" className="rounded-full">
-          <Plus className="mr-1 h-4 w-4" /> Adicionar
-        </Button>
-      </form>
+      {/* Add items from catalog (inline autocomplete + browse modal) */}
+      <CatalogPicker
+        onAdd={addFromCatalog}
+        existingKeys={new Set(items.map((i) => i.product_key))}
+      />
 
       {/* Items grouped by category + savings sidebar */}
       <div className="grid gap-6 lg:grid-cols-3">
