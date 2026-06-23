@@ -229,7 +229,10 @@ function MarketDialog({
 }) {
   const [name, setName] = useState("");
   const [chain, setChain] = useState("");
+  const [state, setState] = useState<string>("");
   const [city, setCity] = useState("");
+  const [cities, setCities] = useState<string[]>([]);
+  const [loadingCities, setLoadingCities] = useState(false);
   const [color, setColor] = useState(COLORS[0]);
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
@@ -239,12 +242,33 @@ function MarketDialog({
     if (open) {
       setName(market?.name ?? "");
       setChain(market?.chain ?? "");
+      setState(market?.state ?? "");
       setCity(market?.city ?? "");
       setColor(market?.color ?? COLORS[0]);
       setLat(market?.latitude != null ? String(market.latitude) : "");
       setLng(market?.longitude != null ? String(market.longitude) : "");
     }
   }, [open, market]);
+
+  useEffect(() => {
+    if (!state) {
+      setCities([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingCities(true);
+    fetch(`https://servicodadosabertos.ibge.gov.br/api/v1/localidades/estados/${state}/municipios`)
+      .then((r) => r.json())
+      .then((data: { nome: string }[]) => {
+        if (cancelled) return;
+        setCities(data.map((d) => d.nome).sort((a, b) => a.localeCompare(b, "pt-BR")));
+      })
+      .catch(() => !cancelled && setCities([]))
+      .finally(() => !cancelled && setLoadingCities(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [state]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
