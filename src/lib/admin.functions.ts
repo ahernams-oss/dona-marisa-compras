@@ -94,3 +94,42 @@ export const setUserRole = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
+
+export const listPricesByMarket = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: markets, error: mErr } = await supabaseAdmin
+      .from("markets")
+      .select("id, name, city, state, neighborhood, address")
+      .order("name");
+    if (mErr) throw new Error(mErr.message);
+
+    const { data: prices, error: pErr } = await supabaseAdmin
+      .from("price_reports")
+      .select(
+        "id, market_id, reporter_id, product_name, brand, price, unit, category, photo_url, created_at",
+      )
+      .order("created_at", { ascending: false });
+    if (pErr) throw new Error(pErr.message);
+
+    const reporterIds = Array.from(new Set((prices ?? []).map((p: any) => p.reporter_id)));
+    const { data: profiles } = reporterIds.length
+      ? await supabaseAdmin.from("profiles").select("id, full_name").in("id", reporterIds)
+      : { data: [] as any[] };
+    const nameById = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
+
+    const byMarket = new Map<string, any[]>();
+    (prices ?? []).forEach((p: any) => {
+      const arr = byMarket.get(p.market_id) ?? [];
+      arr.push({ ...p, reporter_name: nameById.get(p.reporter_id) ?? null });
+      byMarket.set(p.market_id, arr);
+    });
+
+    return (markets ?? []).map((m: any) => ({
+      ...m,
+      prices: byMarket.get(m.id) ?? [],
+    }));
+  });
