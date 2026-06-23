@@ -1,26 +1,20 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 
 export const Route = createFileRoute("/_authenticated")({
+  ssr: false,
+  beforeLoad: async () => {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
+      throw redirect({ to: "/auth" });
+    }
+    return { user: data.user };
+  },
   component: AuthLayout,
 });
 
 function AuthLayout() {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="grid min-h-screen place-items-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    throw redirect({ to: "/auth" });
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />

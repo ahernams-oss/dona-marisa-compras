@@ -10,7 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiExtractPriceRouteImport } from './routes/api/extract-price'
 import { Route as AuthenticatedReportRouteImport } from './routes/_authenticated/report'
@@ -23,7 +23,7 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRoute = AuthenticatedRouteImport.update({
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
@@ -40,17 +40,17 @@ const ApiExtractPriceRoute = ApiExtractPriceRouteImport.update({
 const AuthenticatedReportRoute = AuthenticatedReportRouteImport.update({
   id: '/report',
   path: '/report',
-  getParentRoute: () => AuthenticatedRoute,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMarketsRoute = AuthenticatedMarketsRouteImport.update({
   id: '/markets',
   path: '/markets',
-  getParentRoute: () => AuthenticatedRoute,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedListsRoute = AuthenticatedListsRouteImport.update({
   id: '/lists',
   path: '/lists',
-  getParentRoute: () => AuthenticatedRoute,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedListsIdRoute = AuthenticatedListsIdRouteImport.update({
   id: '/$id',
@@ -79,7 +79,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/lists': typeof AuthenticatedListsRouteWithChildren
   '/_authenticated/markets': typeof AuthenticatedMarketsRoute
@@ -120,7 +120,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiExtractPriceRoute: typeof ApiExtractPriceRoute
 }
@@ -138,7 +138,7 @@ declare module '@tanstack/react-router' {
       id: '/_authenticated'
       path: ''
       fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteImport
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -160,21 +160,21 @@ declare module '@tanstack/react-router' {
       path: '/report'
       fullPath: '/report'
       preLoaderRoute: typeof AuthenticatedReportRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/markets': {
       id: '/_authenticated/markets'
       path: '/markets'
       fullPath: '/markets'
       preLoaderRoute: typeof AuthenticatedMarketsRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/lists': {
       id: '/_authenticated/lists'
       path: '/lists'
       fullPath: '/lists'
       preLoaderRoute: typeof AuthenticatedListsRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/lists/$id': {
       id: '/_authenticated/lists/$id'
@@ -197,25 +197,24 @@ const AuthenticatedListsRouteChildren: AuthenticatedListsRouteChildren = {
 const AuthenticatedListsRouteWithChildren =
   AuthenticatedListsRoute._addFileChildren(AuthenticatedListsRouteChildren)
 
-interface AuthenticatedRouteChildren {
+interface AuthenticatedRouteRouteChildren {
   AuthenticatedListsRoute: typeof AuthenticatedListsRouteWithChildren
   AuthenticatedMarketsRoute: typeof AuthenticatedMarketsRoute
   AuthenticatedReportRoute: typeof AuthenticatedReportRoute
 }
 
-const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedListsRoute: AuthenticatedListsRouteWithChildren,
   AuthenticatedMarketsRoute: AuthenticatedMarketsRoute,
   AuthenticatedReportRoute: AuthenticatedReportRoute,
 }
 
-const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
-  AuthenticatedRouteChildren,
-)
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiExtractPriceRoute: ApiExtractPriceRoute,
 }
