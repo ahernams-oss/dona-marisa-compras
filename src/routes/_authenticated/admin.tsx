@@ -63,6 +63,12 @@ function AdminPage() {
     enabled: !!isAdmin,
   });
 
+  const pricesQuery = useQuery({
+    queryKey: ["admin-prices-by-market"],
+    queryFn: () => pricesFn({}),
+    enabled: !!isAdmin,
+  });
+
   const mutate = useMutation({
     mutationFn: (vars: { userId: string; role: "admin" | "user"; grant: boolean }) =>
       setRoleFn({ data: vars }),
