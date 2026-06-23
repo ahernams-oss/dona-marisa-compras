@@ -2,14 +2,26 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Shield, ShieldOff, Search, Users, Crown } from "lucide-react";
+import { Shield, ShieldOff, Search, Users, Crown, Store, Tag } from "lucide-react";
 import { toast } from "sonner";
 
-import { checkIsAdmin, listUsers, setUserRole } from "@/lib/admin.functions";
+import {
+  checkIsAdmin,
+  listUsers,
+  setUserRole,
+  listPricesByMarket,
+} from "@/lib/admin.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import {
   Table,
   TableBody,
