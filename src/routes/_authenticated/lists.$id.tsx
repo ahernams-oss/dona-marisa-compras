@@ -369,14 +369,12 @@ function ListDetail() {
             <p className="mt-1 text-xs opacity-80">
               {comparison.totalMatched}/{comparison.totalItems} itens com preço · frete {formatBRL(comparison.optimizedFreightTotal)}
             </p>
-            {comparison.savedVsBestSingle > 0 ? (
-              <div className="mt-3 flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
-                <TrendingDown className="h-3 w-3" />
-                Economia estimada {formatBRL(comparison.savedVsBestSingle)}
-              </div>
-            ) : (
-              <p className="mt-3 text-xs opacity-80">Nenhuma economia estimada no momento</p>
-            )}
+            <div className="mt-3 flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
+              <TrendingDown className="h-3 w-3" />
+              {comparison.savedVsBestSingle > 0
+                ? `Economia estimada ${formatBRL(comparison.savedVsBestSingle)}`
+                : "Sem economia no momento"}
+            </div>
           </div>
 
           {comparison.bestSingle && (
