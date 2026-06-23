@@ -26,6 +26,7 @@ type AddPayload = {
   product_key: string;
   category: string;
   unit: string;
+  quantity: number;
 };
 
 type Props = {
