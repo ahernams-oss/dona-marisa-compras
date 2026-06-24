@@ -283,37 +283,14 @@ function ListDetail() {
               {geo.requesting ? "Localizando..." : "Usar minha localização"}
             </Button>
           )}
-          <Button
-            onClick={() =>
-              exportListPdf({
-                listName: list.name,
-                markets,
-                items,
-                marketBest: comparison.marketBest,
-                itemBest: comparison.itemBest,
-                itemSavings: comparison.itemSavings,
-                splitWithFreight: comparison.splitWithFreight,
-                optimizedTotal: comparison.optimizedTotal,
-                optimizedFreightTotal: comparison.optimizedFreightTotal,
-                optimizedGrandTotal: comparison.optimizedGrandTotal,
-                bestSingle: comparison.bestSingle
-                  ? {
-                      market: comparison.bestSingle.market,
-                      subtotal: comparison.bestSingle.subtotal,
-                      freight: comparison.bestSingle.freight,
-                      total: comparison.bestSingle.total,
-                    }
-                  : null,
-                savedVsBestSingle: comparison.savedVsBestSingle,
-              })
-            }
-            variant="outline"
-            size="sm"
-            className="rounded-full"
+          <ExportPdfDialog
+            listName={list.name}
+            items={items}
+            markets={markets}
+            prices={prices}
+            freight={freight}
             disabled={items.length === 0}
-          >
-            <FileDown className="mr-1.5 h-4 w-4" /> Exportar PDF
-          </Button>
+          />
           <ShareListDialog listId={list.id} isOwner={isOwner} />
         </div>
       </div>
