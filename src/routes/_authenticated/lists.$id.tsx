@@ -228,6 +228,7 @@ function ListDetail() {
     return {
       marketBest,
       itemBest,
+      itemSavings,
       splitWithFreight,
       optimizedTotal,
       optimizedFreightTotal,
