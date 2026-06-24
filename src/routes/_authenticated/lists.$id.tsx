@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Trash2, ArrowLeft, Truck, TrendingDown, Camera, Store, MapPin, History, TrendingUp, Minus, FileDown } from "lucide-react";
-import { exportListPdf } from "@/lib/export-pdf";
+import { Trash2, ArrowLeft, Truck, TrendingDown, Camera, Store, MapPin, History, TrendingUp, Minus } from "lucide-react";
+import { ExportPdfDialog } from "@/components/ExportPdfDialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -283,37 +283,14 @@ function ListDetail() {
               {geo.requesting ? "Localizando..." : "Usar minha localização"}
             </Button>
           )}
-          <Button
-            onClick={() =>
-              exportListPdf({
-                listName: list.name,
-                markets,
-                items,
-                marketBest: comparison.marketBest,
-                itemBest: comparison.itemBest,
-                itemSavings: comparison.itemSavings,
-                splitWithFreight: comparison.splitWithFreight,
-                optimizedTotal: comparison.optimizedTotal,
-                optimizedFreightTotal: comparison.optimizedFreightTotal,
-                optimizedGrandTotal: comparison.optimizedGrandTotal,
-                bestSingle: comparison.bestSingle
-                  ? {
-                      market: comparison.bestSingle.market,
-                      subtotal: comparison.bestSingle.subtotal,
-                      freight: comparison.bestSingle.freight,
-                      total: comparison.bestSingle.total,
-                    }
-                  : null,
-                savedVsBestSingle: comparison.savedVsBestSingle,
-              })
-            }
-            variant="outline"
-            size="sm"
-            className="rounded-full"
+          <ExportPdfDialog
+            listName={list.name}
+            items={items}
+            markets={markets}
+            prices={prices}
+            freight={freight}
             disabled={items.length === 0}
-          >
-            <FileDown className="mr-1.5 h-4 w-4" /> Exportar PDF
-          </Button>
+          />
           <ShareListDialog listId={list.id} isOwner={isOwner} />
         </div>
       </div>
