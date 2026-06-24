@@ -165,6 +165,19 @@ function ListDetail() {
       itemBest[item.id] = best;
     }
 
+    const itemSavings: Record<string, number> = {};
+    for (const item of items) {
+      const best = itemBest[item.id];
+      if (!best) {
+        itemSavings[item.id] = 0;
+        continue;
+      }
+      const itemPrices = prices.filter((p) => p.product_key === item.product_key);
+      const maxPrice = itemPrices.length > 0 ? Math.max(...itemPrices.map((p) => p.price)) : best.price;
+      itemSavings[item.id] = Math.max(0, (maxPrice - best.price) * item.quantity);
+    }
+
+
     const split: Record<string, { items: { item: Item; price: number }[]; subtotal: number }> = {};
     for (const m of markets) split[m.id] = { items: [], subtotal: 0 };
     let optimizedTotal = 0;
