@@ -144,6 +144,10 @@ function ReportPage() {
                 <p className="text-sm font-medium">Tirar foto da etiqueta</p>
                 <p className="text-xs text-muted-foreground">A IA lê o nome e o preço automaticamente</p>
               </button>
+              <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Info className="h-3 w-3 shrink-0" />
+                No celular, tocar aqui abre a câmera automaticamente. No computador, você pode escolher uma foto da galeria.
+              </p>
             )}
             <input
               ref={fileRef}
