@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Camera, Sparkles, Upload, Loader2 } from "lucide-react";
+import { Camera, Sparkles, Upload, Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -133,17 +133,23 @@ function ReportPage() {
                 )}
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="grid w-full place-items-center gap-2 rounded-2xl border-2 border-dashed border-border bg-accent/30 p-8 text-center transition hover:border-primary hover:bg-accent"
-              >
-                <div className="grid h-12 w-12 place-items-center rounded-full bg-primary/15 text-primary">
-                  <Camera className="h-6 w-6" />
-                </div>
-                <p className="text-sm font-medium">Tirar foto da etiqueta</p>
-                <p className="text-xs text-muted-foreground">A IA lê o nome e o preço automaticamente</p>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="grid w-full place-items-center gap-2 rounded-2xl border-2 border-dashed border-border bg-accent/30 p-8 text-center transition hover:border-primary hover:bg-accent"
+                >
+                  <div className="grid h-12 w-12 place-items-center rounded-full bg-primary/15 text-primary">
+                    <Camera className="h-6 w-6" />
+                  </div>
+                  <p className="text-sm font-medium">Tirar foto da etiqueta</p>
+                  <p className="text-xs text-muted-foreground">A IA lê o nome e o preço automaticamente</p>
+                </button>
+                <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Info className="h-3 w-3 shrink-0" />
+                  No celular, tocar aqui abre a câmera automaticamente. No computador, você pode escolher uma foto da galeria.
+                </p>
+              </>
             )}
             <input
               ref={fileRef}
