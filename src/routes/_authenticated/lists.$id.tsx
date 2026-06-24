@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Trash2, ArrowLeft, Truck, TrendingDown, Camera, Store, MapPin, History, TrendingUp, Minus } from "lucide-react";
+import { Trash2, ArrowLeft, Truck, TrendingDown, Camera, Store, MapPin, History, TrendingUp, Minus, FileDown } from "lucide-react";
+import { exportListPdf } from "@/lib/export-pdf";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -164,6 +165,19 @@ function ListDetail() {
       itemBest[item.id] = best;
     }
 
+    const itemSavings: Record<string, number> = {};
+    for (const item of items) {
+      const best = itemBest[item.id];
+      if (!best) {
+        itemSavings[item.id] = 0;
+        continue;
+      }
+      const itemPrices = prices.filter((p) => p.product_key === item.product_key);
+      const maxPrice = itemPrices.length > 0 ? Math.max(...itemPrices.map((p) => p.price)) : best.price;
+      itemSavings[item.id] = Math.max(0, (maxPrice - best.price) * item.quantity);
+    }
+
+
     const split: Record<string, { items: { item: Item; price: number }[]; subtotal: number }> = {};
     for (const m of markets) split[m.id] = { items: [], subtotal: 0 };
     let optimizedTotal = 0;
@@ -214,6 +228,7 @@ function ListDetail() {
     return {
       marketBest,
       itemBest,
+      itemSavings,
       splitWithFreight,
       optimizedTotal,
       optimizedFreightTotal,
@@ -268,6 +283,37 @@ function ListDetail() {
               {geo.requesting ? "Localizando..." : "Usar minha localização"}
             </Button>
           )}
+          <Button
+            onClick={() =>
+              exportListPdf({
+                listName: list.name,
+                markets,
+                items,
+                marketBest: comparison.marketBest,
+                itemBest: comparison.itemBest,
+                itemSavings: comparison.itemSavings,
+                splitWithFreight: comparison.splitWithFreight,
+                optimizedTotal: comparison.optimizedTotal,
+                optimizedFreightTotal: comparison.optimizedFreightTotal,
+                optimizedGrandTotal: comparison.optimizedGrandTotal,
+                bestSingle: comparison.bestSingle
+                  ? {
+                      market: comparison.bestSingle.market,
+                      subtotal: comparison.bestSingle.subtotal,
+                      freight: comparison.bestSingle.freight,
+                      total: comparison.bestSingle.total,
+                    }
+                  : null,
+                savedVsBestSingle: comparison.savedVsBestSingle,
+              })
+            }
+            variant="outline"
+            size="sm"
+            className="rounded-full"
+            disabled={items.length === 0}
+          >
+            <FileDown className="mr-1.5 h-4 w-4" /> Exportar PDF
+          </Button>
           <ShareListDialog listId={list.id} isOwner={isOwner} />
         </div>
       </div>
