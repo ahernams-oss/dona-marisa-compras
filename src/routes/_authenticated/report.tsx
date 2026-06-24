@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { normalizeProductKey, formatBRL, CATEGORIES, suggestCategory, type CategoryValue } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/report")({
@@ -220,7 +221,17 @@ function ReportPage() {
           </div>
           <div>
             <Label htmlFor="unit">Unidade</Label>
-            <Input id="unit" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="un, kg, L" className="mt-1.5" />
+            <Select value={unit} onValueChange={setUnit}>
+              <SelectTrigger id="unit" className="mt-1.5 w-full">
+                <SelectValue placeholder="Selecione a unidade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="un">Un</SelectItem>
+                <SelectItem value="kg">Kg</SelectItem>
+                <SelectItem value="gr">Gr</SelectItem>
+                <SelectItem value="L">L</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="sm:col-span-2">
             <Label htmlFor="price">Preço (R$)</Label>
