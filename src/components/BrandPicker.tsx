@@ -22,10 +22,12 @@ type Props = {
   value: Brand | null;
   onChange: (b: Brand | null) => void;
   brands: Brand[];
+  productKey?: string | null;
+  productCategory?: string | null;
   onRequestCreated?: () => void;
 };
 
-export function BrandPicker({ value, onChange, brands, onRequestCreated }: Props) {
+export function BrandPicker({ value, onChange, brands, productKey, productCategory, onRequestCreated }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
