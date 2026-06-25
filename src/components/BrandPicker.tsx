@@ -68,6 +68,7 @@ export function BrandPicker({ value, onChange, brands, productKey, productCatego
         name,
         normalized_name: normalizeProductKey(name),
         suggested_category: requestCategory || null,
+        product_key: productKey ?? null,
         requested_by: u.user.id,
       });
       if (error) throw error;
