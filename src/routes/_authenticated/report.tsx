@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/report")({
   component: ReportPage,
 });
 
-type Market = { id: string; name: string; color: string | null; network: string | null; city: string | null; state: string | null };
+type Market = { id: string; name: string; color: string | null; chain: string | null; city: string | null; state: string | null };
 
 function ReportPage() {
   const { user } = useAuth();
