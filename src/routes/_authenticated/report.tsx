@@ -122,6 +122,25 @@ function ReportPage() {
   const { position: geo, requesting: geoRequesting, error: geoError, request: requestGeo, clear: clearGeo } = useGeolocation();
   const [sortByDistance, setSortByDistance] = useState(false);
 
+  // Filter brands to those associated with the selected product.
+  // Fallback: if no associations exist for this product, allow all brands.
+  // "Sem marca" is always allowed.
+  const brandsForProduct = useMemo(() => {
+    if (!product) return brands;
+    const allowed = new Set(
+      productBrands.filter((pb) => pb.product_key === product.product_key).map((pb) => pb.brand_id),
+    );
+    if (allowed.size === 0) return brands;
+    return brands.filter((b) => allowed.has(b.id) || b.normalized_name === "sem-marca");
+  }, [brands, productBrands, product]);
+
+  // If the currently selected brand becomes invalid for the new product, clear it.
+  useEffect(() => {
+    if (brand && !brandsForProduct.some((b) => b.id === brand.id)) {
+      setBrand(null);
+    }
+  }, [brandsForProduct, brand]);
+
   useEffect(() => {
     if (!marketId && markets.length > 0) setMarketId(markets[0].id);
   }, [markets, marketId]);
