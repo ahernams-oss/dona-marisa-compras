@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Loader2, Share2, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { findUserIdByEmail } from "@/lib/share.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +19,7 @@ export function ShareListDialog({ listId, isOwner }: Props) {
   const [shares, setShares] = useState<Share[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const findUser = useServerFn(findUserIdByEmail);
 
   const load = async () => {
     setLoading(true);
@@ -47,8 +50,7 @@ export function ShareListDialog({ listId, isOwner }: Props) {
     if (!email.trim()) return;
     setSubmitting(true);
     try {
-      const { data: userId, error: rpcErr } = await supabase.rpc("find_user_by_email", { _email: email.trim() });
-      if (rpcErr) throw rpcErr;
+      const { userId } = await findUser({ data: { email: email.trim() } });
       if (!userId) {
         toast.error("Nenhuma usuária Dona Marisa com esse e-mail. Peça pra ela criar conta primeiro 💜");
         return;
