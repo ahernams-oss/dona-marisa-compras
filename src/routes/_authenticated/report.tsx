@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Camera, Sparkles, Upload, Loader2, Info, Check, ChevronsUpDown, Store, Search } from "lucide-react";
+import { Camera, Sparkles, Upload, Loader2, Info, Check, ChevronsUpDown, Store, Search, MapPin, X } from "lucide-react";
 import { toast } from "sonner";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
