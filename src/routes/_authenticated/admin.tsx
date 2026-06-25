@@ -2,17 +2,19 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Shield, ShieldOff, Search, Users, Crown, Store, Tag, Package, GitMerge, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Shield, ShieldOff, Search, Users, Crown, Store, Tag, Package, GitMerge, CheckCircle2, AlertTriangle, Sparkles, ThumbsUp, ThumbsDown } from "lucide-react";
 import { toast } from "sonner";
 
 import {
-  checkIsAdmin,
+  checkIsStaff,
   listUsers,
   setUserRole,
   listPricesByMarket,
   listProductKeysUsage,
   mergeProductKey,
   promoteToCatalog,
+  listBrandRequests,
+  reviewBrandRequest,
 } from "@/lib/admin.functions";
 import {
   Dialog,
@@ -49,24 +51,26 @@ export const Route = createFileRoute("/_authenticated/admin")({
 function AdminPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const checkFn = useServerFn(checkIsAdmin);
+  const checkFn = useServerFn(checkIsStaff);
   const listFn = useServerFn(listUsers);
   const setRoleFn = useServerFn(setUserRole);
   const pricesFn = useServerFn(listPricesByMarket);
 
-  const adminQuery = useQuery({
-    queryKey: ["is-admin"],
+  const staffQuery = useQuery({
+    queryKey: ["is-staff"],
     queryFn: () => checkFn({}),
   });
 
-  const isAdmin = adminQuery.data?.isAdmin;
+  const isAdmin = staffQuery.data?.isAdmin;
+  const isModerator = staffQuery.data?.isModerator;
+  const isStaff = isAdmin || isModerator;
 
   useEffect(() => {
-    if (adminQuery.isSuccess && !isAdmin) {
-      toast.error("Acesso restrito a administradores");
+    if (staffQuery.isSuccess && !isStaff) {
+      toast.error("Acesso restrito a administradores e moderadores");
       navigate({ to: "/lists" });
     }
-  }, [adminQuery.isSuccess, isAdmin, navigate]);
+  }, [staffQuery.isSuccess, isStaff, navigate]);
 
   const usersQuery = useQuery({
     queryKey: ["admin-users"],
@@ -81,7 +85,7 @@ function AdminPage() {
   });
 
   const mutate = useMutation({
-    mutationFn: (vars: { userId: string; role: "admin" | "user"; grant: boolean }) =>
+    mutationFn: (vars: { userId: string; role: "admin" | "moderator" | "user"; grant: boolean }) =>
       setRoleFn({ data: vars }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-users"] });
@@ -106,7 +110,7 @@ function AdminPage() {
   const adminCount = (usersQuery.data ?? []).filter((u) => u.roles.includes("admin")).length;
   const total = usersQuery.data?.length ?? 0;
 
-  if (adminQuery.isLoading || !isAdmin) {
+  if (staffQuery.isLoading || !isStaff) {
     return (
       <div className="py-20 text-center text-muted-foreground">Verificando permissões…</div>
     );

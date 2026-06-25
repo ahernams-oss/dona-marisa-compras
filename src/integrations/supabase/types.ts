@@ -14,6 +14,89 @@ export type Database = {
   }
   public: {
     Tables: {
+      brand_requests: {
+        Row: {
+          approved_brand_id: string | null
+          created_at: string
+          id: string
+          name: string
+          normalized_name: string
+          requested_by: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          suggested_category: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_brand_id?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          normalized_name: string
+          requested_by: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_category?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_brand_id?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          normalized_name?: string
+          requested_by?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_category?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_requests_approved_brand_id_fkey"
+            columns: ["approved_brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brands: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          normalized_name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          normalized_name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          normalized_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       list_items: {
         Row: {
           category: string | null
@@ -138,6 +221,7 @@ export type Database = {
       price_reports: {
         Row: {
           brand: string | null
+          brand_id: string
           category: string | null
           created_at: string
           id: string
@@ -151,6 +235,7 @@ export type Database = {
         }
         Insert: {
           brand?: string | null
+          brand_id: string
           category?: string | null
           created_at?: string
           id?: string
@@ -164,6 +249,7 @@ export type Database = {
         }
         Update: {
           brand?: string | null
+          brand_id?: string
           category?: string | null
           created_at?: string
           id?: string
@@ -176,6 +262,13 @@ export type Database = {
           unit?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "price_reports_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "price_reports_market_id_fkey"
             columns: ["market_id"]
@@ -290,7 +383,7 @@ export type Database = {
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "moderator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -418,7 +511,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "moderator"],
     },
   },
 } as const

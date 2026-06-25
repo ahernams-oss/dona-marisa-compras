@@ -14,14 +14,36 @@ async function isAdmin(userId: string): Promise<boolean> {
   return !!data;
 }
 
+async function isStaff(userId: string): Promise<{ isAdmin: boolean; isModerator: boolean }> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+  if (error) throw new Error(error.message);
+  const roles = (data ?? []).map((r: any) => r.role as string);
+  return { isAdmin: roles.includes("admin"), isModerator: roles.includes("moderator") };
+}
+
 async function assertAdmin(_supabase: any, userId: string) {
   if (!(await isAdmin(userId))) throw new Response("Forbidden", { status: 403 });
+}
+
+async function assertStaff(userId: string) {
+  const { isAdmin: a, isModerator: m } = await isStaff(userId);
+  if (!a && !m) throw new Response("Forbidden", { status: 403 });
 }
 
 export const checkIsAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     return { isAdmin: await isAdmin(context.userId) };
+  });
+
+export const checkIsStaff = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    return await isStaff(context.userId);
   });
 
 export const listUsers = createServerFn({ method: "GET" })
@@ -70,7 +92,7 @@ export const setUserRole = createServerFn({ method: "POST" })
     z
       .object({
         userId: z.string().uuid(),
-        role: z.enum(["admin", "user"]),
+        role: z.enum(["admin", "moderator", "user"]),
         grant: z.boolean(),
       })
       .parse(data),
@@ -280,5 +302,154 @@ export const promoteToCatalog = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+/**
+ * Brand moderation — staff (admin + moderator) can list and review requests,
+ * create brands, and edit brands.
+ */
+
+function normalizeBrand(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export const listBrandRequests = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({ status: z.enum(["pending", "approved", "rejected", "all"]).default("pending") })
+      .parse(data ?? {}),
+  )
+  .handler(async ({ context, data }) => {
+    await assertStaff(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    let q = supabaseAdmin
+      .from("brand_requests")
+      .select("id, name, normalized_name, suggested_category, requested_by, status, review_notes, reviewed_by, reviewed_at, approved_brand_id, created_at")
+      .order("created_at", { ascending: false });
+    if (data.status !== "all") q = q.eq("status", data.status);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+
+    const userIds = Array.from(
+      new Set([
+        ...(rows ?? []).map((r: any) => r.requested_by),
+        ...(rows ?? []).map((r: any) => r.reviewed_by).filter(Boolean),
+      ]),
+    );
+    const { data: profiles } = userIds.length
+      ? await supabaseAdmin.from("profiles").select("id, full_name").in("id", userIds)
+      : { data: [] as any[] };
+    const nameById = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
+
+    return (rows ?? []).map((r: any) => ({
+      ...r,
+      requested_by_name: nameById.get(r.requested_by) ?? null,
+      reviewed_by_name: r.reviewed_by ? nameById.get(r.reviewed_by) ?? null : null,
+    }));
+  });
+
+export const reviewBrandRequest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        action: z.enum(["approve", "reject"]),
+        notes: z.string().optional(),
+        category_override: z.string().optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    await assertStaff(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: req, error: rErr } = await supabaseAdmin
+      .from("brand_requests")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (rErr) throw new Error(rErr.message);
+    if (!req) throw new Response("Solicitação não encontrada", { status: 404 });
+    if (req.status !== "pending") {
+      throw new Response("Solicitação já foi revisada", { status: 400 });
+    }
+
+    let approvedBrandId: string | null = null;
+
+    if (data.action === "approve") {
+      // Reuse existing brand by normalized name, or create new.
+      const normalized = normalizeBrand(req.name);
+      const { data: existing } = await supabaseAdmin
+        .from("brands")
+        .select("id")
+        .eq("normalized_name", normalized)
+        .maybeSingle();
+      if (existing) {
+        approvedBrandId = existing.id;
+      } else {
+        const { data: created, error: cErr } = await supabaseAdmin
+          .from("brands")
+          .insert({
+            name: req.name,
+            normalized_name: normalized,
+            category: data.category_override ?? req.suggested_category ?? null,
+            created_by: req.requested_by,
+          })
+          .select("id")
+          .single();
+        if (cErr) throw new Error(cErr.message);
+        approvedBrandId = created.id;
+      }
+    }
+
+    const { error: uErr } = await supabaseAdmin
+      .from("brand_requests")
+      .update({
+        status: data.action === "approve" ? "approved" : "rejected",
+        review_notes: data.notes ?? null,
+        reviewed_by: context.userId,
+        reviewed_at: new Date().toISOString(),
+        approved_brand_id: approvedBrandId,
+      })
+      .eq("id", data.id);
+    if (uErr) throw new Error(uErr.message);
+
+    return { ok: true, approvedBrandId };
+  });
+
+export const createBrand = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        name: z.string().min(1),
+        category: z.string().optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    await assertStaff(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const normalized = normalizeBrand(data.name);
+    const { data: created, error } = await supabaseAdmin
+      .from("brands")
+      .insert({
+        name: data.name,
+        normalized_name: normalized,
+        category: data.category ?? null,
+        created_by: context.userId,
+      })
+      .select("id, name")
+      .single();
+    if (error) throw new Error(error.message);
+    return created;
   });
 
