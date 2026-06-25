@@ -1,8 +1,9 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Camera, Sparkles, Upload, Loader2, Info, Check, ChevronsUpDown, Store, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -15,17 +16,45 @@ import { cn, normalizeProductKey, formatBRL, CATEGORIES, suggestCategory, type C
 const MARKET_PAGE_SIZE = 50;
 const MARKET_ROW_HEIGHT = 56;
 
-export const Route = createFileRoute("/_authenticated/report")({
-  component: ReportPage,
+type Market = { id: string; name: string; color: string | null; chain: string | null; city: string | null; state: string | null };
+
+const marketsQueryOptions = queryOptions({
+  queryKey: ["markets", "picker"],
+  queryFn: async (): Promise<Market[]> => {
+    const { data, error } = await supabase
+      .from("markets")
+      .select("id,name,color,chain,city,state")
+      .order("name");
+    if (error) throw error;
+    return (data ?? []) as Market[];
+  },
+  staleTime: 5 * 60_000,
+  gcTime: 30 * 60_000,
 });
 
-type Market = { id: string; name: string; color: string | null; chain: string | null; city: string | null; state: string | null };
+export const Route = createFileRoute("/_authenticated/report")({
+  loader: ({ context }) => context.queryClient.ensureQueryData(marketsQueryOptions),
+  component: ReportPage,
+  errorComponent: ({ error }) => {
+    const router = useRouter();
+    return (
+      <div role="alert" className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
+        <p className="font-medium text-destructive">Não consegui carregar os mercados.</p>
+        <p className="mt-1 text-muted-foreground">{error.message}</p>
+        <Button size="sm" variant="outline" className="mt-3" onClick={() => router.invalidate()}>
+          Tentar novamente
+        </Button>
+      </div>
+    );
+  },
+  notFoundComponent: () => <div className="text-sm text-muted-foreground">Página não encontrada.</div>,
+});
 
 function ReportPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [markets, setMarkets] = useState<Market[]>([]);
+  const { data: markets } = useSuspenseQuery(marketsQueryOptions);
   const [marketId, setMarketId] = useState("");
   const [marketPickerOpen, setMarketPickerOpen] = useState(false);
   const [marketSearch, setMarketSearch] = useState("");
@@ -41,6 +70,10 @@ function ReportPage() {
   const [unit, setUnit] = useState("un");
   const [category, setCategory] = useState<CategoryValue>("outros");
   const selectedMarket = markets.find((m) => m.id === marketId);
+
+  useEffect(() => {
+    if (!marketId && markets.length > 0) setMarketId(markets[0].id);
+  }, [markets, marketId]);
 
   const filteredMarkets = useMemo(() => {
     const s = marketSearch.toLowerCase().trim();
@@ -69,13 +102,6 @@ function ReportPage() {
     estimateSize: () => MARKET_ROW_HEIGHT,
     overscan: 8,
   });
-
-  useEffect(() => {
-    supabase.from("markets").select("id,name,color,chain,city,state").order("name").then(({ data }) => {
-      setMarkets((data ?? []) as Market[]);
-      if (data && data.length > 0) setMarketId(data[0].id);
-    });
-  }, []);
 
   const onFile = async (file: File) => {
     setPhoto(file);
