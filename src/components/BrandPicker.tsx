@@ -53,9 +53,6 @@ export function BrandPicker({ value, onChange, brands, productKey, productCatego
     setOpen(false);
     setRequestOpen(true);
   };
-    setOpen(false);
-    setRequestOpen(true);
-  };
 
   const submitRequest = async () => {
     const name = requestName.trim();
