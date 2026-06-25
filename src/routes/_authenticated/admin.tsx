@@ -206,6 +206,7 @@ function AdminPage() {
                   <TableBody>
                     {filtered.map((u) => {
                       const isAdminUser = u.roles.includes("admin");
+                      const isModUser = u.roles.includes("moderator");
                       return (
                         <TableRow key={u.id}>
                           <TableCell>
@@ -221,37 +222,56 @@ function AdminPage() {
                               : "Nunca"}
                           </TableCell>
                           <TableCell>
-                            {isAdminUser ? (
-                              <Badge className="bg-coral text-coral-foreground hover:bg-coral/90">
-                                Admin
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary">Usuário</Badge>
-                            )}
+                            <div className="flex flex-wrap gap-1">
+                              {isAdminUser && (
+                                <Badge className="bg-coral text-coral-foreground hover:bg-coral/90">Admin</Badge>
+                              )}
+                              {isModUser && (
+                                <Badge className="bg-violet-100 text-violet-900 hover:bg-violet-100">Moderador</Badge>
+                              )}
+                              {!isAdminUser && !isModUser && <Badge variant="secondary">Usuário</Badge>}
+                            </div>
                           </TableCell>
                           <TableCell className="text-right">
-                            {isAdminUser ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={mutate.isPending}
-                                onClick={() =>
-                                  mutate.mutate({ userId: u.id, role: "admin", grant: false })
-                                }
-                              >
-                                <ShieldOff className="h-3.5 w-3.5" /> Revogar admin
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                disabled={mutate.isPending}
-                                onClick={() =>
-                                  mutate.mutate({ userId: u.id, role: "admin", grant: true })
-                                }
-                              >
-                                <Shield className="h-3.5 w-3.5" /> Tornar admin
-                              </Button>
-                            )}
+                            <div className="flex flex-wrap justify-end gap-2">
+                              {isAdminUser ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={mutate.isPending}
+                                  onClick={() => mutate.mutate({ userId: u.id, role: "admin", grant: false })}
+                                >
+                                  <ShieldOff className="h-3.5 w-3.5" /> Revogar admin
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  disabled={mutate.isPending}
+                                  onClick={() => mutate.mutate({ userId: u.id, role: "admin", grant: true })}
+                                >
+                                  <Shield className="h-3.5 w-3.5" /> Admin
+                                </Button>
+                              )}
+                              {isModUser ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={mutate.isPending}
+                                  onClick={() => mutate.mutate({ userId: u.id, role: "moderator", grant: false })}
+                                >
+                                  <ShieldOff className="h-3.5 w-3.5" /> Revogar moderador
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  disabled={mutate.isPending}
+                                  onClick={() => mutate.mutate({ userId: u.id, role: "moderator", grant: true })}
+                                >
+                                  <Sparkles className="h-3.5 w-3.5" /> Moderador
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
