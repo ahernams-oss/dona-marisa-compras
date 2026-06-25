@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Camera, Sparkles, Upload, Loader2, Info } from "lucide-react";
+import { Camera, Sparkles, Upload, Loader2, Info, Check, ChevronsUpDown, Store } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { normalizeProductKey, formatBRL, CATEGORIES, suggestCategory, type CategoryValue } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn, normalizeProductKey, formatBRL, CATEGORIES, suggestCategory, type CategoryValue } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/report")({
   component: ReportPage,
