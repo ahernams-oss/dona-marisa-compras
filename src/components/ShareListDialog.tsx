@@ -19,6 +19,7 @@ export function ShareListDialog({ listId, isOwner }: Props) {
   const [shares, setShares] = useState<Share[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const findUser = useServerFn(findUserIdByEmail);
 
   const load = async () => {
     setLoading(true);
