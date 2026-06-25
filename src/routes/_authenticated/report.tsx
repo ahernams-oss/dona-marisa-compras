@@ -28,6 +28,9 @@ function ReportPage() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [marketId, setMarketId] = useState("");
   const [marketPickerOpen, setMarketPickerOpen] = useState(false);
+  const [marketSearch, setMarketSearch] = useState("");
+  const [marketPage, setMarketPage] = useState(1);
+  const marketScrollRef = useRef<HTMLDivElement>(null);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [extracting, setExtracting] = useState(false);
