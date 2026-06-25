@@ -370,6 +370,21 @@ function ListDetail() {
                           ) : (
                             <p className="mt-1 text-xs text-muted-foreground">Sem preço reportado ainda — <Link to="/report" className="text-primary underline">reportar</Link></p>
                           )}
+                          {uniqueBrands.size > 1 && (
+                            <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
+                              {brandRows.map((b, i) => (
+                                <span
+                                  key={i}
+                                  className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 px-2 py-0.5"
+                                  title={`${b.marketName}`}
+                                >
+                                  <span className="font-medium">{b.brand}</span>
+                                  <span className="text-muted-foreground">·</span>
+                                  <span className="text-success">{formatBRL(b.price)}</span>
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         {history.length >= 2 && (
                           <button
