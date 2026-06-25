@@ -153,16 +153,25 @@ function AdminPage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="users" className="space-y-4">
+      <Tabs defaultValue={isAdmin ? "users" : "brands"} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="users">
-            <Users className="mr-2 h-4 w-4" /> Usuários
-          </TabsTrigger>
-          <TabsTrigger value="prices">
-            <Tag className="mr-2 h-4 w-4" /> Preços por mercado
-          </TabsTrigger>
-          <TabsTrigger value="products">
-            <Package className="mr-2 h-4 w-4" /> Produtos
+          {isAdmin && (
+            <TabsTrigger value="users">
+              <Users className="mr-2 h-4 w-4" /> Usuários
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="prices">
+              <Tag className="mr-2 h-4 w-4" /> Preços por mercado
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="products">
+              <Package className="mr-2 h-4 w-4" /> Produtos
+            </TabsTrigger>
+          )}
+          <TabsTrigger value="brands">
+            <Sparkles className="mr-2 h-4 w-4" /> Marcas
           </TabsTrigger>
         </TabsList>
 
