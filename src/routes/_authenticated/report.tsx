@@ -368,12 +368,18 @@ function ReportPage() {
                                   </span>
                                 )}
                               </div>
+                              {m.distanceKm != null && (
+                                <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                                  {m.distanceKm < 10 ? m.distanceKm.toFixed(1) : Math.round(m.distanceKm)} km
+                                </span>
+                              )}
                               <Check
                                 className={cn(
                                   "h-4 w-4 shrink-0",
                                   marketId === m.id ? "opacity-100" : "opacity-0",
                                 )}
                               />
+
                             </button>
                           );
                         })}
