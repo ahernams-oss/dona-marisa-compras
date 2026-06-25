@@ -606,3 +606,120 @@ function ProductsTab() {
   );
 }
 
+function BrandsTab() {
+  const qc = useQueryClient();
+  const [status, setStatus] = useState<"pending" | "approved" | "rejected" | "all">("pending");
+  const listFn = useServerFn(listBrandRequests);
+  const reviewFn = useServerFn(reviewBrandRequest);
+
+  const query = useQuery({
+    queryKey: ["admin-brand-requests", status],
+    queryFn: () => listFn({ data: { status } }),
+  });
+
+  const review = useMutation({
+    mutationFn: (vars: { id: string; action: "approve" | "reject"; notes?: string }) =>
+      reviewFn({ data: vars }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["admin-brand-requests"] });
+      qc.invalidateQueries({ queryKey: ["brands"] });
+      toast.success(vars.action === "approve" ? "Marca aprovada" : "Solicitação rejeitada");
+    },
+    onError: (err: any) => toast.error(err?.message ?? "Erro"),
+  });
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <CardTitle>Solicitações de marcas</CardTitle>
+          <CardDescription>Aprovar ou rejeitar novas marcas sugeridas pelos usuários.</CardDescription>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {(["pending", "approved", "rejected", "all"] as const).map((s) => (
+            <Button
+              key={s}
+              size="sm"
+              variant={status === s ? "default" : "outline"}
+              onClick={() => setStatus(s)}
+            >
+              {s === "pending" ? "Pendentes" : s === "approved" ? "Aprovadas" : s === "rejected" ? "Rejeitadas" : "Todas"}
+            </Button>
+          ))}
+        </div>
+      </CardHeader>
+      <CardContent>
+        {query.isLoading ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">Carregando…</p>
+        ) : (query.data ?? []).length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma solicitação.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Marca</TableHead>
+                <TableHead>Categoria sugerida</TableHead>
+                <TableHead>Solicitado por</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(query.data ?? []).map((r: any) => (
+                <TableRow key={r.id}>
+                  <TableCell>
+                    <div className="font-medium">{r.name}</div>
+                    <div className="text-xs text-muted-foreground">{r.normalized_name}</div>
+                  </TableCell>
+                  <TableCell className="text-sm">{r.suggested_category ?? "—"}</TableCell>
+                  <TableCell className="text-xs">
+                    <div>{r.requested_by_name ?? "—"}</div>
+                    <div className="text-muted-foreground">
+                      {new Date(r.created_at).toLocaleString("pt-BR")}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {r.status === "pending" && <Badge variant="secondary">Pendente</Badge>}
+                    {r.status === "approved" && (
+                      <Badge className="bg-emerald-100 text-emerald-900 hover:bg-emerald-100">Aprovada</Badge>
+                    )}
+                    {r.status === "rejected" && <Badge variant="outline">Rejeitada</Badge>}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {r.status === "pending" ? (
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          disabled={review.isPending}
+                          onClick={() => review.mutate({ id: r.id, action: "approve" })}
+                        >
+                          <ThumbsUp className="h-3.5 w-3.5" /> Aprovar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={review.isPending}
+                          onClick={() => {
+                            const notes = window.prompt("Motivo da rejeição (opcional):") ?? undefined;
+                            review.mutate({ id: r.id, action: "reject", notes });
+                          }}
+                        >
+                          <ThumbsDown className="h-3.5 w-3.5" /> Rejeitar
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        {r.reviewed_by_name ?? "—"}
+                      </span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
