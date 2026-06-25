@@ -2,24 +2,26 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function assertAdmin(supabase: any, userId: string) {
-  const { data, error } = await supabase.rpc("has_role", {
-    _user_id: userId,
-    _role: "admin",
-  });
+async function isAdmin(userId: string): Promise<boolean> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("user_roles")
+    .select("user_id")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Response("Forbidden", { status: 403 });
+  return !!data;
+}
+
+async function assertAdmin(_supabase: any, userId: string) {
+  if (!(await isAdmin(userId))) throw new Response("Forbidden", { status: 403 });
 }
 
 export const checkIsAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (error) throw new Error(error.message);
-    return { isAdmin: !!data };
+    return { isAdmin: await isAdmin(context.userId) };
   });
 
 export const listUsers = createServerFn({ method: "GET" })
