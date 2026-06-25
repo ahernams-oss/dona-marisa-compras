@@ -448,6 +448,8 @@ function ProductsTab() {
 
   const orphanCount = rows.filter((r) => !r.in_catalog).length;
 
+  const [brandsDialogProductKey, setBrandsDialogProductKey] = useState<string | null>(null);
+
   return (
     <Card>
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -458,14 +460,19 @@ function ProductsTab() {
             <em>arroz-5kg-tio-joao</em>) para manter a comparação correta entre mercados.
           </p>
         </div>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar produto ou chave"
-            className="pl-8"
-          />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar produto ou chave"
+              className="pl-8"
+            />
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setBrandsDialogProductKey("")}>
+            <Sparkles className="mr-1 h-4 w-4" /> Marcas por produto
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
