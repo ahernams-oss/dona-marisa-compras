@@ -286,22 +286,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      find_user_by_email: { Args: { _email: string }; Returns: string }
-      has_list_access: {
-        Args: { _list_id: string; _user_id: string }
-        Returns: boolean
-      }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
-      is_list_shared_with: {
-        Args: { _list_id: string; _user_id: string }
-        Returns: boolean
-      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
