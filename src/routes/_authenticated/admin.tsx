@@ -15,6 +15,9 @@ import {
   promoteToCatalog,
   listBrandRequests,
   reviewBrandRequest,
+  listProductBrandAssociations,
+  setProductBrandAssociations,
+  listAllBrands,
 } from "@/lib/admin.functions";
 import {
   Dialog,
