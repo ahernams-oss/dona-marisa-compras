@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/report")({
   component: ReportPage,
 });
 
-type Market = { id: string; name: string; color: string | null };
+type Market = { id: string; name: string; color: string | null; network: string | null; city: string | null; state: string | null };
 
 function ReportPage() {
   const { user } = useAuth();
@@ -24,6 +24,7 @@ function ReportPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [markets, setMarkets] = useState<Market[]>([]);
   const [marketId, setMarketId] = useState("");
+  const [marketPickerOpen, setMarketPickerOpen] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [extracting, setExtracting] = useState(false);
@@ -33,6 +34,7 @@ function ReportPage() {
   const [price, setPrice] = useState("");
   const [unit, setUnit] = useState("un");
   const [category, setCategory] = useState<CategoryValue>("outros");
+  const selectedMarket = markets.find((m) => m.id === marketId);
 
   useEffect(() => {
     supabase.from("markets").select("id,name,color").order("name").then(({ data }) => {
