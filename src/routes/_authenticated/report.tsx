@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Camera, Sparkles, Upload, Loader2, Info, Check, ChevronsUpDown, Store, Search } from "lucide-react";
+import { Camera, Sparkles, Upload, Loader2, Info, Check, ChevronsUpDown, Store, Search, MapPin, X } from "lucide-react";
 import { toast } from "sonner";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
@@ -11,19 +11,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useGeolocation } from "@/hooks/use-geolocation";
 import { cn, normalizeProductKey, formatBRL, CATEGORIES, suggestCategory, type CategoryValue } from "@/lib/utils";
 
 const MARKET_PAGE_SIZE = 50;
 const MARKET_ROW_HEIGHT = 56;
 
-type Market = { id: string; name: string; color: string | null; chain: string | null; city: string | null; state: string | null };
+type Market = { id: string; name: string; color: string | null; chain: string | null; city: string | null; state: string | null; latitude: number | null; longitude: number | null };
 
 const marketsQueryOptions = queryOptions({
   queryKey: ["markets", "picker"],
   queryFn: async (): Promise<Market[]> => {
     const { data, error } = await supabase
       .from("markets")
-      .select("id,name,color,chain,city,state")
+      .select("id,name,color,chain,city,state,latitude,longitude")
       .order("name");
     if (error) throw error;
     return (data ?? []) as Market[];
@@ -31,6 +32,16 @@ const marketsQueryOptions = queryOptions({
   staleTime: 5 * 60_000,
   gcTime: 30 * 60_000,
 });
+
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const R = 6371;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const lat1 = (a.lat * Math.PI) / 180;
+  const lat2 = (b.lat * Math.PI) / 180;
+  const h = Math.sin(dLat / 2) ** 2 + Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
 
 export const Route = createFileRoute("/_authenticated/report")({
   loader: ({ context }) => context.queryClient.ensureQueryData(marketsQueryOptions),
@@ -70,20 +81,42 @@ function ReportPage() {
   const [unit, setUnit] = useState("un");
   const [category, setCategory] = useState<CategoryValue>("outros");
   const selectedMarket = markets.find((m) => m.id === marketId);
+  const { position: geo, requesting: geoRequesting, error: geoError, request: requestGeo, clear: clearGeo } = useGeolocation();
+  const [sortByDistance, setSortByDistance] = useState(false);
 
   useEffect(() => {
     if (!marketId && markets.length > 0) setMarketId(markets[0].id);
   }, [markets, marketId]);
 
+  const marketsWithDistance = useMemo(() => {
+    if (!geo) return markets.map((m) => ({ ...m, distanceKm: null as number | null }));
+    const out = markets.map((m) => ({
+      ...m,
+      distanceKm:
+        m.latitude != null && m.longitude != null
+          ? haversineKm({ lat: geo.lat, lng: geo.lng }, { lat: m.latitude, lng: m.longitude })
+          : null,
+    }));
+    if (sortByDistance) {
+      out.sort((a, b) => {
+        if (a.distanceKm == null && b.distanceKm == null) return 0;
+        if (a.distanceKm == null) return 1;
+        if (b.distanceKm == null) return -1;
+        return a.distanceKm - b.distanceKm;
+      });
+    }
+    return out;
+  }, [markets, geo, sortByDistance]);
+
   const filteredMarkets = useMemo(() => {
     const s = marketSearch.toLowerCase().trim();
-    if (!s) return markets;
+    if (!s) return marketsWithDistance;
     const tokens = s.split(/\s+/);
-    return markets.filter((m) => {
+    return marketsWithDistance.filter((m) => {
       const hay = [m.name, m.chain, m.city, m.state].filter(Boolean).join(" ").toLowerCase();
       return tokens.every((t) => hay.includes(t));
     });
-  }, [markets, marketSearch]);
+  }, [marketsWithDistance, marketSearch]);
 
   const visibleCount = Math.min(filteredMarkets.length, marketPage * MARKET_PAGE_SIZE);
   const visibleMarkets = useMemo(
@@ -335,12 +368,18 @@ function ReportPage() {
                                   </span>
                                 )}
                               </div>
+                              {m.distanceKm != null && (
+                                <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                                  {m.distanceKm < 10 ? m.distanceKm.toFixed(1) : Math.round(m.distanceKm)} km
+                                </span>
+                              )}
                               <Check
                                 className={cn(
                                   "h-4 w-4 shrink-0",
                                   marketId === m.id ? "opacity-100" : "opacity-0",
                                 )}
                               />
+
                             </button>
                           );
                         })}
@@ -364,9 +403,55 @@ function ReportPage() {
                 )}
               </PopoverContent>
             </Popover>
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              {markets.length} {markets.length === 1 ? "mercado cadastrado" : "mercados cadastrados"} — busque por nome, rede ou cidade.
-            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {geo ? (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={sortByDistance ? "default" : "outline"}
+                    onClick={() => setSortByDistance((v) => !v)}
+                    className="h-8 rounded-full"
+                  >
+                    <MapPin className="mr-1.5 h-3.5 w-3.5" />
+                    {sortByDistance ? "Ordenando por distância" : "Ordenar por distância"}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => { clearGeo(); setSortByDistance(false); }}
+                    className="h-8 rounded-full text-muted-foreground"
+                  >
+                    <X className="mr-1 h-3.5 w-3.5" />
+                    Limpar localização
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => { requestGeo(); setSortByDistance(true); }}
+                  disabled={geoRequesting}
+                  className="h-8 rounded-full"
+                >
+                  {geoRequesting ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <MapPin className="mr-1.5 h-3.5 w-3.5" />
+                  )}
+                  {geoRequesting ? "Localizando…" : "Mercados próximos a mim"}
+                </Button>
+              )}
+              <span className="text-xs text-muted-foreground">
+                {markets.length} {markets.length === 1 ? "mercado cadastrado" : "mercados cadastrados"}
+              </span>
+            </div>
+            {geoError && (
+              <p className="mt-1 text-xs text-destructive">{geoError}</p>
+            )}
+
           </div>
           <div className="sm:col-span-2">
             <Label htmlFor="product">
