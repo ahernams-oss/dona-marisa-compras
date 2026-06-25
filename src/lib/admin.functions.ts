@@ -408,6 +408,16 @@ export const reviewBrandRequest = createServerFn({ method: "POST" })
         if (cErr) throw new Error(cErr.message);
         approvedBrandId = created.id;
       }
+
+      // Auto-link approved brand to the product the user was reporting, if any.
+      if (approvedBrandId && req.product_key) {
+        await supabaseAdmin
+          .from("product_brands")
+          .upsert(
+            { product_key: req.product_key, brand_id: approvedBrandId, created_by: context.userId },
+            { onConflict: "product_key,brand_id" },
+          );
+      }
     }
 
     const { error: uErr } = await supabaseAdmin
