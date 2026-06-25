@@ -49,6 +49,21 @@ const brandsQueryOptions = queryOptions({
   gcTime: 30 * 60_000,
 });
 
+type ProductBrandLink = { product_key: string; brand_id: string };
+
+const productBrandsQueryOptions = queryOptions({
+  queryKey: ["product-brands", "all"],
+  queryFn: async (): Promise<ProductBrandLink[]> => {
+    const { data, error } = await supabase
+      .from("product_brands")
+      .select("product_key,brand_id");
+    if (error) throw error;
+    return (data ?? []) as ProductBrandLink[];
+  },
+  staleTime: 5 * 60_000,
+  gcTime: 30 * 60_000,
+});
+
 function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
@@ -64,7 +79,9 @@ export const Route = createFileRoute("/_authenticated/report")({
     Promise.all([
       context.queryClient.ensureQueryData(marketsQueryOptions),
       context.queryClient.ensureQueryData(brandsQueryOptions),
+      context.queryClient.ensureQueryData(productBrandsQueryOptions),
     ]),
+
   component: ReportPage,
   errorComponent: ({ error }) => {
     const router = useRouter();
