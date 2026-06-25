@@ -519,7 +519,18 @@ function ReportPage() {
           </div>
           <div className="sm:col-span-2">
             <Label>Marca</Label>
-            <BrandPicker value={brand} onChange={setBrand} brands={brands} />
+            <BrandPicker
+              value={brand}
+              onChange={setBrand}
+              brands={brandsForProduct}
+              productKey={product?.product_key ?? null}
+              productCategory={product?.category ?? null}
+            />
+            {product && brandsForProduct.length < brands.length && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Mostrando marcas associadas a <strong>{product.name}</strong>. Não encontrou? Solicite o cadastro.
+              </p>
+            )}
             <p className="mt-1 text-xs text-muted-foreground">
               A marca é obrigatória — escolha "Sem marca" se o produto não tiver uma marca específica.
               Não encontrou? Solicite o cadastro para um moderador.
