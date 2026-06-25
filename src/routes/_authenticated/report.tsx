@@ -104,6 +104,7 @@ function ReportPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const { data: markets } = useSuspenseQuery(marketsQueryOptions);
   const { data: brands } = useSuspenseQuery(brandsQueryOptions);
+  const { data: productBrands } = useSuspenseQuery(productBrandsQueryOptions);
   const [marketId, setMarketId] = useState("");
   const [marketPickerOpen, setMarketPickerOpen] = useState(false);
   const [marketSearch, setMarketSearch] = useState("");
