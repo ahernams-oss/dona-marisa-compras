@@ -37,7 +37,7 @@ function ReportPage() {
   const selectedMarket = markets.find((m) => m.id === marketId);
 
   useEffect(() => {
-    supabase.from("markets").select("id,name,color").order("name").then(({ data }) => {
+    supabase.from("markets").select("id,name,color,network,city,state").order("name").then(({ data }) => {
       setMarkets((data ?? []) as Market[]);
       if (data && data.length > 0) setMarketId(data[0].id);
     });
