@@ -179,16 +179,97 @@ function ReportPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Label htmlFor="market">Mercado</Label>
-            <select
-              id="market"
-              value={marketId}
-              onChange={(e) => setMarketId(e.target.value)}
-              className="mt-1.5 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-            >
-              {markets.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
+            <Popover open={marketPickerOpen} onOpenChange={setMarketPickerOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  id="market"
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={marketPickerOpen}
+                  className="mt-1.5 h-10 w-full justify-between font-normal"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    {selectedMarket ? (
+                      <>
+                        <span
+                          className="h-2.5 w-2.5 shrink-0 rounded-full"
+                          style={{ background: selectedMarket.color ?? "hsl(var(--primary))" }}
+                        />
+                        <span className="truncate">{selectedMarket.name}</span>
+                        {(selectedMarket.city || selectedMarket.state) && (
+                          <span className="truncate text-xs text-muted-foreground">
+                            · {[selectedMarket.city, selectedMarket.state].filter(Boolean).join("/")}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">Selecione um mercado…</span>
+                    )}
+                  </span>
+                  <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
+                <Command
+                  filter={(value, search) => {
+                    const v = value.toLowerCase();
+                    const s = search.toLowerCase().trim();
+                    if (!s) return 1;
+                    return s.split(/\s+/).every((tok) => v.includes(tok)) ? 1 : 0;
+                  }}
+                >
+                  <CommandInput placeholder="Buscar por nome, rede ou cidade…" />
+                  <CommandList>
+                    <CommandEmpty>
+                      <div className="flex flex-col items-center gap-2 py-4 text-sm text-muted-foreground">
+                        <Store className="h-6 w-6 opacity-50" />
+                        Nenhum mercado encontrado
+                      </div>
+                    </CommandEmpty>
+                    <CommandGroup>
+                      {markets.map((m) => {
+                        const loc = [m.city, m.state].filter(Boolean).join("/");
+                        const haystack = [m.name, m.chain, m.city, m.state].filter(Boolean).join(" ");
+                        return (
+                          <CommandItem
+                            key={m.id}
+                            value={`${haystack} ${m.id}`}
+                            onSelect={() => {
+                              setMarketId(m.id);
+                              setMarketPickerOpen(false);
+                            }}
+                            className="gap-2"
+                          >
+                            <span
+                              className="h-2.5 w-2.5 shrink-0 rounded-full"
+                              style={{ background: m.color ?? "hsl(var(--primary))" }}
+                            />
+                            <div className="flex min-w-0 flex-1 flex-col">
+                              <span className="truncate font-medium">{m.name}</span>
+                              {(m.chain || loc) && (
+                                <span className="truncate text-xs text-muted-foreground">
+                                  {[m.chain, loc].filter(Boolean).join(" · ")}
+                                </span>
+                              )}
+                            </div>
+                            <Check
+                              className={cn(
+                                "h-4 w-4 shrink-0",
+                                marketId === m.id ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {markets.length} {markets.length === 1 ? "mercado cadastrado" : "mercados cadastrados"} — busque por nome, rede ou cidade.
+            </p>
           </div>
           <div className="sm:col-span-2">
             <Label htmlFor="product">
