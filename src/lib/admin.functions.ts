@@ -135,3 +135,150 @@ export const listPricesByMarket = createServerFn({ method: "GET" })
       prices: byMarket.get(m.id) ?? [],
     }));
   });
+
+/**
+ * Aggregate every distinct product_key that appears in price_reports or
+ * list_items, with usage counts and whether it exists in the catalog.
+ * Used by admin to identify divergent entries (e.g. "arroz-5kg" vs
+ * "arroz-5kg-tio-joao") and merge them.
+ */
+export const listProductKeysUsage = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const [{ data: reports, error: rErr }, { data: items, error: iErr }, { data: catalog, error: cErr }] =
+      await Promise.all([
+        supabaseAdmin.from("price_reports").select("product_key, product_name, category, unit"),
+        supabaseAdmin.from("list_items").select("product_key, product_name, category, unit"),
+        supabaseAdmin.from("product_catalog").select("id, product_key, name, category, unit").order("name"),
+      ]);
+    if (rErr) throw new Error(rErr.message);
+    if (iErr) throw new Error(iErr.message);
+    if (cErr) throw new Error(cErr.message);
+
+    const catalogKeys = new Set((catalog ?? []).map((c: any) => c.product_key));
+    type Row = {
+      product_key: string;
+      sample_name: string;
+      category: string | null;
+      unit: string | null;
+      reports: number;
+      list_items: number;
+      in_catalog: boolean;
+    };
+    const map = new Map<string, Row>();
+    const bump = (key: string, name: string, cat: string | null, unit: string | null, kind: "r" | "i") => {
+      const cur = map.get(key) ?? {
+        product_key: key,
+        sample_name: name,
+        category: cat,
+        unit,
+        reports: 0,
+        list_items: 0,
+        in_catalog: catalogKeys.has(key),
+      };
+      if (kind === "r") cur.reports += 1;
+      else cur.list_items += 1;
+      map.set(key, cur);
+    };
+    (reports ?? []).forEach((r: any) => bump(r.product_key, r.product_name, r.category, r.unit, "r"));
+    (items ?? []).forEach((r: any) => bump(r.product_key, r.product_name, r.category, r.unit, "i"));
+
+    return {
+      rows: Array.from(map.values()).sort((a, b) => {
+        if (a.in_catalog !== b.in_catalog) return a.in_catalog ? 1 : -1;
+        return b.reports + b.list_items - (a.reports + a.list_items);
+      }),
+      catalog: (catalog ?? []).map((c: any) => ({
+        id: c.id,
+        product_key: c.product_key,
+        name: c.name,
+        category: c.category,
+        unit: c.unit,
+      })),
+    };
+  });
+
+/**
+ * Replace every reference to `from` product_key with the catalog entry
+ * identified by `toCatalogId` across price_reports and list_items.
+ */
+export const mergeProductKey = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        from: z.string().min(1),
+        toCatalogId: z.string().uuid(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: target, error: tErr } = await supabaseAdmin
+      .from("product_catalog")
+      .select("product_key, name, category, unit")
+      .eq("id", data.toCatalogId)
+      .maybeSingle();
+    if (tErr) throw new Error(tErr.message);
+    if (!target) throw new Response("Produto destino não encontrado", { status: 404 });
+    if (target.product_key === data.from) {
+      throw new Response("Origem e destino são o mesmo produto", { status: 400 });
+    }
+
+    const payload = {
+      product_key: target.product_key,
+      product_name: target.name,
+      category: target.category,
+      unit: target.unit,
+    };
+
+    const { error: rErr, count: rCount } = await supabaseAdmin
+      .from("price_reports")
+      .update(payload, { count: "exact" })
+      .eq("product_key", data.from);
+    if (rErr) throw new Error(rErr.message);
+
+    const { error: iErr, count: iCount } = await supabaseAdmin
+      .from("list_items")
+      .update(payload, { count: "exact" })
+      .eq("product_key", data.from);
+    if (iErr) throw new Error(iErr.message);
+
+    return { ok: true, reportsUpdated: rCount ?? 0, itemsUpdated: iCount ?? 0 };
+  });
+
+/**
+ * Promote an orphan product_key (free-text) to the curated catalog so future
+ * reports can pick it up.
+ */
+export const promoteToCatalog = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        product_key: z.string().min(1),
+        name: z.string().min(1),
+        category: z.string().min(1),
+        unit: z.string().min(1),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { error } = await supabaseAdmin.from("product_catalog").insert({
+      product_key: data.product_key,
+      name: data.name,
+      category: data.category,
+      unit: data.unit,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
