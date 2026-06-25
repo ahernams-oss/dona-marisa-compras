@@ -81,20 +81,42 @@ function ReportPage() {
   const [unit, setUnit] = useState("un");
   const [category, setCategory] = useState<CategoryValue>("outros");
   const selectedMarket = markets.find((m) => m.id === marketId);
+  const { position: geo, requesting: geoRequesting, error: geoError, request: requestGeo, clear: clearGeo } = useGeolocation();
+  const [sortByDistance, setSortByDistance] = useState(false);
 
   useEffect(() => {
     if (!marketId && markets.length > 0) setMarketId(markets[0].id);
   }, [markets, marketId]);
 
+  const marketsWithDistance = useMemo(() => {
+    if (!geo) return markets.map((m) => ({ ...m, distanceKm: null as number | null }));
+    const out = markets.map((m) => ({
+      ...m,
+      distanceKm:
+        m.latitude != null && m.longitude != null
+          ? haversineKm({ lat: geo.lat, lng: geo.lng }, { lat: m.latitude, lng: m.longitude })
+          : null,
+    }));
+    if (sortByDistance) {
+      out.sort((a, b) => {
+        if (a.distanceKm == null && b.distanceKm == null) return 0;
+        if (a.distanceKm == null) return 1;
+        if (b.distanceKm == null) return -1;
+        return a.distanceKm - b.distanceKm;
+      });
+    }
+    return out;
+  }, [markets, geo, sortByDistance]);
+
   const filteredMarkets = useMemo(() => {
     const s = marketSearch.toLowerCase().trim();
-    if (!s) return markets;
+    if (!s) return marketsWithDistance;
     const tokens = s.split(/\s+/);
-    return markets.filter((m) => {
+    return marketsWithDistance.filter((m) => {
       const hay = [m.name, m.chain, m.city, m.state].filter(Boolean).join(" ").toLowerCase();
       return tokens.every((t) => hay.includes(t));
     });
-  }, [markets, marketSearch]);
+  }, [marketsWithDistance, marketSearch]);
 
   const visibleCount = Math.min(filteredMarkets.length, marketPage * MARKET_PAGE_SIZE);
   const visibleMarkets = useMemo(
