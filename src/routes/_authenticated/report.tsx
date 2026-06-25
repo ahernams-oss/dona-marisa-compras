@@ -49,6 +49,21 @@ const brandsQueryOptions = queryOptions({
   gcTime: 30 * 60_000,
 });
 
+type ProductBrandLink = { product_key: string; brand_id: string };
+
+const productBrandsQueryOptions = queryOptions({
+  queryKey: ["product-brands", "all"],
+  queryFn: async (): Promise<ProductBrandLink[]> => {
+    const { data, error } = await supabase
+      .from("product_brands")
+      .select("product_key,brand_id");
+    if (error) throw error;
+    return (data ?? []) as ProductBrandLink[];
+  },
+  staleTime: 5 * 60_000,
+  gcTime: 30 * 60_000,
+});
+
 function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
@@ -64,7 +79,9 @@ export const Route = createFileRoute("/_authenticated/report")({
     Promise.all([
       context.queryClient.ensureQueryData(marketsQueryOptions),
       context.queryClient.ensureQueryData(brandsQueryOptions),
+      context.queryClient.ensureQueryData(productBrandsQueryOptions),
     ]),
+
   component: ReportPage,
   errorComponent: ({ error }) => {
     const router = useRouter();
@@ -87,6 +104,7 @@ function ReportPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const { data: markets } = useSuspenseQuery(marketsQueryOptions);
   const { data: brands } = useSuspenseQuery(brandsQueryOptions);
+  const { data: productBrands } = useSuspenseQuery(productBrandsQueryOptions);
   const [marketId, setMarketId] = useState("");
   const [marketPickerOpen, setMarketPickerOpen] = useState(false);
   const [marketSearch, setMarketSearch] = useState("");
@@ -103,6 +121,25 @@ function ReportPage() {
   const selectedMarket = markets.find((m) => m.id === marketId);
   const { position: geo, requesting: geoRequesting, error: geoError, request: requestGeo, clear: clearGeo } = useGeolocation();
   const [sortByDistance, setSortByDistance] = useState(false);
+
+  // Filter brands to those associated with the selected product.
+  // Fallback: if no associations exist for this product, allow all brands.
+  // "Sem marca" is always allowed.
+  const brandsForProduct = useMemo(() => {
+    if (!product) return brands;
+    const allowed = new Set(
+      productBrands.filter((pb) => pb.product_key === product.product_key).map((pb) => pb.brand_id),
+    );
+    if (allowed.size === 0) return brands;
+    return brands.filter((b) => allowed.has(b.id) || b.normalized_name === "sem-marca");
+  }, [brands, productBrands, product]);
+
+  // If the currently selected brand becomes invalid for the new product, clear it.
+  useEffect(() => {
+    if (brand && !brandsForProduct.some((b) => b.id === brand.id)) {
+      setBrand(null);
+    }
+  }, [brandsForProduct, brand]);
 
   useEffect(() => {
     if (!marketId && markets.length > 0) setMarketId(markets[0].id);
@@ -482,7 +519,18 @@ function ReportPage() {
           </div>
           <div className="sm:col-span-2">
             <Label>Marca</Label>
-            <BrandPicker value={brand} onChange={setBrand} brands={brands} />
+            <BrandPicker
+              value={brand}
+              onChange={setBrand}
+              brands={brandsForProduct}
+              productKey={product?.product_key ?? null}
+              productCategory={product?.category ?? null}
+            />
+            {product && brandsForProduct.length < brands.length && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Mostrando marcas associadas a <strong>{product.name}</strong>. Não encontrou? Solicite o cadastro.
+              </p>
+            )}
             <p className="mt-1 text-xs text-muted-foreground">
               A marca é obrigatória — escolha "Sem marca" se o produto não tiver uma marca específica.
               Não encontrou? Solicite o cadastro para um moderador.

@@ -15,6 +15,9 @@ import {
   promoteToCatalog,
   listBrandRequests,
   reviewBrandRequest,
+  listProductBrandAssociations,
+  setProductBrandAssociations,
+  listAllBrands,
 } from "@/lib/admin.functions";
 import {
   Dialog,
@@ -445,6 +448,8 @@ function ProductsTab() {
 
   const orphanCount = rows.filter((r) => !r.in_catalog).length;
 
+  const [brandsDialogProductKey, setBrandsDialogProductKey] = useState<string | null>(null);
+
   return (
     <Card>
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -455,14 +460,19 @@ function ProductsTab() {
             <em>arroz-5kg-tio-joao</em>) para manter a comparação correta entre mercados.
           </p>
         </div>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar produto ou chave"
-            className="pl-8"
-          />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar produto ou chave"
+              className="pl-8"
+            />
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setBrandsDialogProductKey("")}>
+            <Sparkles className="mr-1 h-4 w-4" /> Marcas por produto
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -514,28 +524,39 @@ function ProductsTab() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      {!r.in_catalog && (
-                        <div className="flex justify-end gap-2">
-                          <Button size="sm" variant="outline" onClick={() => setMerging(r)}>
-                            <GitMerge className="mr-1 h-3.5 w-3.5" /> Mesclar
-                          </Button>
+                      <div className="flex justify-end gap-2">
+                        {r.in_catalog && (
                           <Button
                             size="sm"
-                            variant="ghost"
-                            disabled={promote.isPending || !r.category || !r.unit}
-                            onClick={() =>
-                              promote.mutate({
-                                product_key: r.product_key,
-                                name: r.sample_name,
-                                category: r.category ?? "outros",
-                                unit: r.unit ?? "un",
-                              })
-                            }
+                            variant="outline"
+                            onClick={() => setBrandsDialogProductKey(r.product_key)}
                           >
-                            <Package className="mr-1 h-3.5 w-3.5" /> Promover
+                            <Sparkles className="mr-1 h-3.5 w-3.5" /> Marcas
                           </Button>
-                        </div>
-                      )}
+                        )}
+                        {!r.in_catalog && (
+                          <>
+                            <Button size="sm" variant="outline" onClick={() => setMerging(r)}>
+                              <GitMerge className="mr-1 h-3.5 w-3.5" /> Mesclar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={promote.isPending || !r.category || !r.unit}
+                              onClick={() =>
+                                promote.mutate({
+                                  product_key: r.product_key,
+                                  name: r.sample_name,
+                                  category: r.category ?? "outros",
+                                  unit: r.unit ?? "un",
+                                })
+                              }
+                            >
+                              <Package className="mr-1 h-3.5 w-3.5" /> Promover
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -602,7 +623,185 @@ function ProductsTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ProductBrandsDialog
+        productKey={brandsDialogProductKey}
+        catalog={catalog}
+        onClose={() => setBrandsDialogProductKey(null)}
+      />
     </Card>
+  );
+}
+
+function ProductBrandsDialog({
+  productKey,
+  catalog,
+  onClose,
+}: {
+  productKey: string | null;
+  catalog: Array<{ id: string; name: string; product_key: string; unit: string }>;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const listAssocFn = useServerFn(listProductBrandAssociations);
+  const setAssocFn = useServerFn(setProductBrandAssociations);
+  const listBrandsFn = useServerFn(listAllBrands);
+
+  const [selectedKey, setSelectedKey] = useState<string>("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
+
+  const open = productKey !== null;
+  const activeKey = selectedKey || productKey || "";
+
+  const brandsQ = useQuery({
+    queryKey: ["admin-all-brands"],
+    queryFn: () => listBrandsFn({}),
+    enabled: open,
+  });
+
+  const assocQ = useQuery({
+    queryKey: ["admin-product-brands", activeKey],
+    queryFn: () => listAssocFn({ data: { product_key: activeKey } }),
+    enabled: open && !!activeKey,
+  });
+
+  useEffect(() => {
+    if (open) setSelectedKey(productKey || "");
+  }, [open, productKey]);
+
+  useEffect(() => {
+    if (assocQ.data) setSelected(new Set(assocQ.data.map((b: any) => b.id)));
+  }, [assocQ.data]);
+
+  const save = useMutation({
+    mutationFn: () =>
+      setAssocFn({ data: { product_key: activeKey, brand_ids: Array.from(selected) } }),
+    onSuccess: () => {
+      toast.success("Associações atualizadas");
+      qc.invalidateQueries({ queryKey: ["admin-product-brands", activeKey] });
+      qc.invalidateQueries({ queryKey: ["product-brands"] });
+      onClose();
+    },
+    onError: (err: any) => toast.error(err?.message ?? "Erro ao salvar"),
+  });
+
+  const toggle = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const brands = brandsQ.data ?? [];
+  const filteredBrands = useMemo(() => {
+    const s = search.toLowerCase().trim();
+    if (!s) return brands;
+    return brands.filter(
+      (b: any) =>
+        b.name.toLowerCase().includes(s) || (b.category ?? "").toLowerCase().includes(s),
+    );
+  }, [brands, search]);
+
+  const currentProduct = catalog.find((c) => c.product_key === activeKey);
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Marcas por produto</DialogTitle>
+          <DialogDescription>
+            Defina quais marcas estão disponíveis para o usuário escolher ao reportar este produto.
+            Se nenhuma marca estiver associada, todas ficam disponíveis como fallback.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Produto do catálogo
+            </label>
+            <select
+              value={activeKey}
+              onChange={(e) => setSelectedKey(e.target.value)}
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="">Selecione…</option>
+              {catalog.map((c) => (
+                <option key={c.id} value={c.product_key}>
+                  {c.name} · {c.unit}
+                </option>
+              ))}
+            </select>
+            {currentProduct && (
+              <p className="mt-1 font-mono text-xs text-muted-foreground">
+                {currentProduct.product_key}
+              </p>
+            )}
+          </div>
+
+          {activeKey && (
+            <>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar marca"
+                  className="pl-8"
+                />
+              </div>
+
+              <div className="max-h-80 overflow-auto rounded-lg border border-border">
+                {brandsQ.isLoading || assocQ.isLoading ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">Carregando…</p>
+                ) : filteredBrands.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    Nenhuma marca encontrada.
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    {filteredBrands.map((b: any) => (
+                      <li key={b.id}>
+                        <label className="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-muted/50">
+                          <input
+                            type="checkbox"
+                            checked={selected.has(b.id)}
+                            onChange={() => toggle(b.id)}
+                            className="h-4 w-4"
+                          />
+                          <div className="flex-1">
+                            <div className="text-sm font-medium">{b.name}</div>
+                            {b.category && (
+                              <div className="text-xs text-muted-foreground">{b.category}</div>
+                            )}
+                          </div>
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                {selected.size} marca(s) associada(s) a este produto.
+              </p>
+            </>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button disabled={!activeKey || save.isPending} onClick={() => save.mutate()}>
+            Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

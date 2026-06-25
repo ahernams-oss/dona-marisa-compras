@@ -408,6 +408,16 @@ export const reviewBrandRequest = createServerFn({ method: "POST" })
         if (cErr) throw new Error(cErr.message);
         approvedBrandId = created.id;
       }
+
+      // Auto-link approved brand to the product the user was reporting, if any.
+      if (approvedBrandId && req.product_key) {
+        await supabaseAdmin
+          .from("product_brands")
+          .upsert(
+            { product_key: req.product_key, brand_id: approvedBrandId, created_by: context.userId },
+            { onConflict: "product_key,brand_id" },
+          );
+      }
     }
 
     const { error: uErr } = await supabaseAdmin
@@ -451,5 +461,68 @@ export const createBrand = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
     return created;
+  });
+
+/**
+ * Product ↔ Brand associations (staff only).
+ */
+export const listProductBrandAssociations = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ product_key: z.string().min(1) }).parse(data))
+  .handler(async ({ context, data }) => {
+    await assertStaff(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
+      .from("product_brands")
+      .select("brand_id, brands ( id, name, normalized_name, category )")
+      .eq("product_key", data.product_key);
+    if (error) throw new Error(error.message);
+    return (rows ?? []).map((r: any) => r.brands).filter(Boolean);
+  });
+
+export const setProductBrandAssociations = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        product_key: z.string().min(1),
+        brand_ids: z.array(z.string().uuid()),
+      })
+      .parse(data),
+  )
+  .handler(async ({ context, data }) => {
+    await assertStaff(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Replace the set: delete current and insert new.
+    const { error: dErr } = await supabaseAdmin
+      .from("product_brands")
+      .delete()
+      .eq("product_key", data.product_key);
+    if (dErr) throw new Error(dErr.message);
+
+    if (data.brand_ids.length > 0) {
+      const rows = data.brand_ids.map((brand_id) => ({
+        product_key: data.product_key,
+        brand_id,
+        created_by: context.userId,
+      }));
+      const { error: iErr } = await supabaseAdmin.from("product_brands").insert(rows);
+      if (iErr) throw new Error(iErr.message);
+    }
+    return { ok: true, count: data.brand_ids.length };
+  });
+
+export const listAllBrands = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertStaff(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("brands")
+      .select("id, name, normalized_name, category")
+      .order("name");
+    if (error) throw new Error(error.message);
+    return data ?? [];
   });
 

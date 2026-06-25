@@ -22,10 +22,12 @@ type Props = {
   value: Brand | null;
   onChange: (b: Brand | null) => void;
   brands: Brand[];
+  productKey?: string | null;
+  productCategory?: string | null;
   onRequestCreated?: () => void;
 };
 
-export function BrandPicker({ value, onChange, brands, onRequestCreated }: Props) {
+export function BrandPicker({ value, onChange, brands, productKey, productCategory, onRequestCreated }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,7 +49,7 @@ export function BrandPicker({ value, onChange, brands, onRequestCreated }: Props
 
   const openRequest = () => {
     setRequestName(search.trim() || "");
-    setRequestCategory("");
+    setRequestCategory(productCategory ?? "");
     setOpen(false);
     setRequestOpen(true);
   };
@@ -66,6 +68,7 @@ export function BrandPicker({ value, onChange, brands, onRequestCreated }: Props
         name,
         normalized_name: normalizeProductKey(name),
         suggested_category: requestCategory || null,
+        product_key: productKey ?? null,
         requested_by: u.user.id,
       });
       if (error) throw error;
