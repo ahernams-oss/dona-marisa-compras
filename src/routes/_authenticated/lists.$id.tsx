@@ -40,6 +40,7 @@ type PriceReport = {
   market_id: string;
   product_key: string;
   product_name: string;
+  brand: string | null;
   price: number;
   unit: string;
   created_at: string;
@@ -72,7 +73,7 @@ function ListDetail() {
       const keys = Array.from(new Set(it.map((i: { product_key: string }) => i.product_key)));
       const { data: pr } = await supabase
         .from("price_reports")
-        .select("id,market_id,product_key,product_name,price,unit,created_at")
+        .select("id,market_id,product_key,product_name,brand,price,unit,created_at")
         .in("product_key", keys)
         .order("created_at", { ascending: false });
       setPrices((pr ?? []) as PriceReport[]);
@@ -329,6 +330,18 @@ function ListDetail() {
                     const itemPrices = prices.filter((p) => p.product_key === item.product_key);
                     const maxPrice = itemPrices.length > 0 ? Math.max(...itemPrices.map((p) => p.price)) : null;
                     const savings = best && maxPrice ? (maxPrice - best.price) * item.quantity : 0;
+                    // Brand breakdown — keep most recent price per (brand|market) to surface variants without breaking comparison.
+                    const brandSeen = new Set<string>();
+                    const brandRows: { brand: string; price: number; marketName: string }[] = [];
+                    for (const p of itemPrices) {
+                      const b = (p.brand?.trim() || "sem marca").toLowerCase();
+                      const key = `${b}|${p.market_id}`;
+                      if (brandSeen.has(key)) continue;
+                      brandSeen.add(key);
+                      const mk = markets.find((m) => m.id === p.market_id);
+                      brandRows.push({ brand: p.brand?.trim() || "sem marca", price: p.price, marketName: mk?.name ?? "—" });
+                    }
+                    const uniqueBrands = new Set(brandRows.map((b) => b.brand.toLowerCase()));
                     return (
                       <li key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4">
                         <div className="min-w-0 flex-1">

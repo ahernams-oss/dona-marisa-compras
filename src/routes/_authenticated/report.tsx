@@ -9,10 +9,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useGeolocation } from "@/hooks/use-geolocation";
-import { cn, normalizeProductKey, formatBRL, CATEGORIES, suggestCategory, type CategoryValue } from "@/lib/utils";
+import { SingleProductPicker, type CatalogProduct } from "@/components/SingleProductPicker";
+import { cn, formatBRL } from "@/lib/utils";
 
 const MARKET_PAGE_SIZE = 50;
 const MARKET_ROW_HEIGHT = 56;
@@ -75,11 +76,10 @@ function ReportPage() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [extracting, setExtracting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [productName, setProductName] = useState("");
+  const [product, setProduct] = useState<CatalogProduct | null>(null);
+  const [aiSeed, setAiSeed] = useState<string>("");
   const [brand, setBrand] = useState("");
   const [price, setPrice] = useState("");
-  const [unit, setUnit] = useState("un");
-  const [category, setCategory] = useState<CategoryValue>("outros");
   const selectedMarket = markets.find((m) => m.id === marketId);
   const { position: geo, requesting: geoRequesting, error: geoError, request: requestGeo, clear: clearGeo } = useGeolocation();
   const [sortByDistance, setSortByDistance] = useState(false);
@@ -156,14 +156,10 @@ function ReportPage() {
       });
       if (!res.ok) throw new Error("Falha ao ler etiqueta");
       const data = await res.json();
-      if (data.product_name) {
-        setProductName(data.product_name);
-        setCategory(suggestCategory(data.product_name));
-      }
+      if (data.product_name) setAiSeed(String(data.product_name));
       if (data.brand) setBrand(data.brand);
       if (data.price) setPrice(String(data.price));
-      if (data.unit) setUnit(data.unit);
-      toast.success("IA leu a etiqueta — confira e ajuste se precisar 💜");
+      toast.success("IA leu a etiqueta — confirme o produto no catálogo 💜");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não consegui ler a etiqueta — preencha à mão");
     } finally {
@@ -173,7 +169,7 @@ function ReportPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !marketId || !productName || !price) {
+    if (!user || !marketId || !product || !price) {
       toast.error("Preencha mercado, produto e preço.");
       return;
     }
@@ -190,16 +186,16 @@ function ReportPage() {
       const { error } = await supabase.from("price_reports").insert({
         market_id: marketId,
         reporter_id: user.id,
-        product_name: productName,
-        product_key: normalizeProductKey(productName),
-        brand: brand || null,
+        product_name: product.name,
+        product_key: product.product_key,
+        brand: brand.trim() || null,
         price: Number(price),
-        unit,
-        category,
+        unit: product.unit,
+        category: product.category,
         photo_url: photoUrl,
       });
       if (error) throw error;
-      toast.success(`Preço de ${productName} (${formatBRL(Number(price))}) reportado!`);
+      toast.success(`Preço de ${product.name} (${formatBRL(Number(price))}) reportado!`);
       navigate({ to: "/lists" });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar");
@@ -454,51 +450,23 @@ function ReportPage() {
 
           </div>
           <div className="sm:col-span-2">
-            <Label htmlFor="product">
+            <Label>
               Produto {extracting && <Sparkles className="ml-1 inline h-3 w-3 text-primary" />}
             </Label>
-            <Input
-              id="product"
-              value={productName}
-              onChange={(e) => {
-                setProductName(e.target.value);
-                if (e.target.value && category === "outros") setCategory(suggestCategory(e.target.value));
-              }}
-              placeholder="Ex: Arroz Tio João 5kg"
-              className="mt-1.5"
-              required
-            />
+            <SingleProductPicker value={product} onChange={setProduct} seed={aiSeed} />
           </div>
           <div className="sm:col-span-2">
-            <Label htmlFor="category">Categoria (corredor)</Label>
-            <select
-              id="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value as CategoryValue)}
-              className="mt-1.5 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
             <Label htmlFor="brand">Marca (opcional)</Label>
-            <Input id="brand" value={brand} onChange={(e) => setBrand(e.target.value)} className="mt-1.5" />
-          </div>
-          <div>
-            <Label htmlFor="unit">Unidade</Label>
-            <Select value={unit} onValueChange={setUnit}>
-              <SelectTrigger id="unit" className="mt-1.5 w-full">
-                <SelectValue placeholder="Selecione a unidade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="un">Un</SelectItem>
-                <SelectItem value="kg">Kg</SelectItem>
-                <SelectItem value="gr">Gr</SelectItem>
-                <SelectItem value="L">L</SelectItem>
-              </SelectContent>
-            </Select>
+            <Input
+              id="brand"
+              value={brand}
+              onChange={(e) => setBrand(e.target.value)}
+              placeholder="Ex: Tio João, Camil — deixe em branco para 'sem marca'"
+              className="mt-1.5"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              A marca é registrada como metadado e não muda como o produto é comparado entre mercados.
+            </p>
           </div>
           <div className="sm:col-span-2">
             <Label htmlFor="price">Preço (R$)</Label>
@@ -506,7 +474,7 @@ function ReportPage() {
           </div>
         </div>
 
-        <Button type="submit" disabled={submitting || extracting} className="w-full rounded-full" size="lg">
+        <Button type="submit" disabled={submitting || extracting || !product} className="w-full rounded-full" size="lg">
           {submitting ? "Salvando..." : "Reportar preço"}
         </Button>
       </form>

@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Shield, ShieldOff, Search, Users, Crown, Store, Tag } from "lucide-react";
+import { Shield, ShieldOff, Search, Users, Crown, Store, Tag, Package, GitMerge, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -10,7 +10,18 @@ import {
   listUsers,
   setUserRole,
   listPricesByMarket,
+  listProductKeysUsage,
+  mergeProductKey,
+  promoteToCatalog,
 } from "@/lib/admin.functions";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -145,6 +156,9 @@ function AdminPage() {
           </TabsTrigger>
           <TabsTrigger value="prices">
             <Tag className="mr-2 h-4 w-4" /> Preços por mercado
+          </TabsTrigger>
+          <TabsTrigger value="products">
+            <Package className="mr-2 h-4 w-4" /> Produtos
           </TabsTrigger>
         </TabsList>
 
@@ -327,7 +341,231 @@ function AdminPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="products">
+          <ProductsTab />
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
+
+function ProductsTab() {
+  const qc = useQueryClient();
+  const listFn = useServerFn(listProductKeysUsage);
+  const mergeFn = useServerFn(mergeProductKey);
+  const promoteFn = useServerFn(promoteToCatalog);
+
+  const q = useQuery({
+    queryKey: ["admin-product-keys"],
+    queryFn: () => listFn({}),
+  });
+
+  const [search, setSearch] = useState("");
+  const [merging, setMerging] = useState<null | {
+    product_key: string;
+    sample_name: string;
+    category: string | null;
+    unit: string | null;
+    reports: number;
+    list_items: number;
+  }>(null);
+  const [targetId, setTargetId] = useState("");
+
+  const merge = useMutation({
+    mutationFn: (vars: { from: string; toCatalogId: string }) => mergeFn({ data: vars }),
+    onSuccess: (res) => {
+      toast.success(
+        `Mesclado · ${res.reportsUpdated} preços e ${res.itemsUpdated} itens atualizados`,
+      );
+      qc.invalidateQueries({ queryKey: ["admin-product-keys"] });
+      qc.invalidateQueries({ queryKey: ["admin-prices-by-market"] });
+      setMerging(null);
+      setTargetId("");
+    },
+    onError: (err: any) => toast.error(err?.message ?? "Erro ao mesclar"),
+  });
+
+  const promote = useMutation({
+    mutationFn: (vars: { product_key: string; name: string; category: string; unit: string }) =>
+      promoteFn({ data: vars }),
+    onSuccess: () => {
+      toast.success("Produto adicionado ao catálogo");
+      qc.invalidateQueries({ queryKey: ["admin-product-keys"] });
+    },
+    onError: (err: any) => toast.error(err?.message ?? "Erro ao promover"),
+  });
+
+  const rows = q.data?.rows ?? [];
+  const catalog = q.data?.catalog ?? [];
+  const filtered = useMemo(() => {
+    const s = search.toLowerCase().trim();
+    if (!s) return rows;
+    return rows.filter(
+      (r) => r.product_key.toLowerCase().includes(s) || r.sample_name.toLowerCase().includes(s),
+    );
+  }, [rows, search]);
+
+  const orphanCount = rows.filter((r) => !r.in_catalog).length;
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <CardTitle>Produtos usados</CardTitle>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Identifique e mescle entradas divergentes (ex.: <em>arroz-5kg</em> vs{" "}
+            <em>arroz-5kg-tio-joao</em>) para manter a comparação correta entre mercados.
+          </p>
+        </div>
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar produto ou chave"
+            className="pl-8"
+          />
+        </div>
+      </CardHeader>
+      <CardContent>
+        {q.isLoading ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">Carregando…</p>
+        ) : (
+          <>
+            <div className="mb-3 flex items-center gap-2 text-xs">
+              <Badge variant="secondary">{rows.length} chaves</Badge>
+              {orphanCount > 0 ? (
+                <Badge className="bg-amber-100 text-amber-900 hover:bg-amber-100">
+                  <AlertTriangle className="mr-1 h-3 w-3" /> {orphanCount} fora do catálogo
+                </Badge>
+              ) : (
+                <Badge className="bg-emerald-100 text-emerald-900 hover:bg-emerald-100">
+                  <CheckCircle2 className="mr-1 h-3 w-3" /> Tudo no catálogo
+                </Badge>
+              )}
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Produto (amostra)</TableHead>
+                  <TableHead className="font-mono text-xs">product_key</TableHead>
+                  <TableHead className="text-center">Reportes</TableHead>
+                  <TableHead className="text-center">Em listas</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((r) => (
+                  <TableRow key={r.product_key}>
+                    <TableCell className="font-medium">{r.sample_name}</TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {r.product_key}
+                    </TableCell>
+                    <TableCell className="text-center">{r.reports}</TableCell>
+                    <TableCell className="text-center">{r.list_items}</TableCell>
+                    <TableCell>
+                      {r.in_catalog ? (
+                        <Badge className="bg-emerald-100 text-emerald-900 hover:bg-emerald-100">
+                          No catálogo
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-amber-100 text-amber-900 hover:bg-amber-100">
+                          Órfão
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {!r.in_catalog && (
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" variant="outline" onClick={() => setMerging(r)}>
+                            <GitMerge className="mr-1 h-3.5 w-3.5" /> Mesclar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={promote.isPending || !r.category || !r.unit}
+                            onClick={() =>
+                              promote.mutate({
+                                product_key: r.product_key,
+                                name: r.sample_name,
+                                category: r.category ?? "outros",
+                                unit: r.unit ?? "un",
+                              })
+                            }
+                          >
+                            <Package className="mr-1 h-3.5 w-3.5" /> Promover
+                          </Button>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filtered.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                      Nada encontrado.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </>
+        )}
+      </CardContent>
+
+      <Dialog open={!!merging} onOpenChange={(o) => !o && setMerging(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mesclar produto</DialogTitle>
+            <DialogDescription>
+              Todos os reportes e itens com <strong className="font-mono">{merging?.product_key}</strong> serão
+              reescritos para o produto escolhido no catálogo.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">De</p>
+              <p className="font-medium">{merging?.sample_name}</p>
+              <p className="text-xs text-muted-foreground">
+                {merging?.reports} reporte(s) · {merging?.list_items} item(s) em listas
+              </p>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Para (produto do catálogo)
+              </label>
+              <select
+                value={targetId}
+                onChange={(e) => setTargetId(e.target.value)}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">Selecione…</option>
+                {catalog.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} · {c.unit}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setMerging(null)}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={!targetId || merge.isPending}
+              onClick={() =>
+                merging && merge.mutate({ from: merging.product_key, toCatalogId: targetId })
+              }
+            >
+              <GitMerge className="mr-1 h-4 w-4" /> Mesclar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
