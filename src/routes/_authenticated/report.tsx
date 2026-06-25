@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { Camera, Sparkles, Upload, Loader2, Info, Check, ChevronsUpDown, Store } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Camera, Sparkles, Upload, Loader2, Info, Check, ChevronsUpDown, Store, Search } from "lucide-react";
 import { toast } from "sonner";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -9,8 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn, normalizeProductKey, formatBRL, CATEGORIES, suggestCategory, type CategoryValue } from "@/lib/utils";
+
+const MARKET_PAGE_SIZE = 50;
+const MARKET_ROW_HEIGHT = 56;
 
 export const Route = createFileRoute("/_authenticated/report")({
   component: ReportPage,
@@ -25,6 +28,9 @@ function ReportPage() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [marketId, setMarketId] = useState("");
   const [marketPickerOpen, setMarketPickerOpen] = useState(false);
+  const [marketSearch, setMarketSearch] = useState("");
+  const [marketPage, setMarketPage] = useState(1);
+  const marketScrollRef = useRef<HTMLDivElement>(null);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [extracting, setExtracting] = useState(false);
@@ -35,6 +41,34 @@ function ReportPage() {
   const [unit, setUnit] = useState("un");
   const [category, setCategory] = useState<CategoryValue>("outros");
   const selectedMarket = markets.find((m) => m.id === marketId);
+
+  const filteredMarkets = useMemo(() => {
+    const s = marketSearch.toLowerCase().trim();
+    if (!s) return markets;
+    const tokens = s.split(/\s+/);
+    return markets.filter((m) => {
+      const hay = [m.name, m.chain, m.city, m.state].filter(Boolean).join(" ").toLowerCase();
+      return tokens.every((t) => hay.includes(t));
+    });
+  }, [markets, marketSearch]);
+
+  const visibleCount = Math.min(filteredMarkets.length, marketPage * MARKET_PAGE_SIZE);
+  const visibleMarkets = useMemo(
+    () => filteredMarkets.slice(0, visibleCount),
+    [filteredMarkets, visibleCount],
+  );
+
+  useEffect(() => {
+    setMarketPage(1);
+    marketScrollRef.current?.scrollTo({ top: 0 });
+  }, [marketSearch, marketPickerOpen]);
+
+  const rowVirtualizer = useVirtualizer({
+    count: visibleMarkets.length,
+    getScrollElement: () => marketScrollRef.current,
+    estimateSize: () => MARKET_ROW_HEIGHT,
+    overscan: 8,
+  });
 
   useEffect(() => {
     supabase.from("markets").select("id,name,color,chain,city,state").order("name").then(({ data }) => {
@@ -211,60 +245,97 @@ function ReportPage() {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
-                <Command
-                  filter={(value, search) => {
-                    const v = value.toLowerCase();
-                    const s = search.toLowerCase().trim();
-                    if (!s) return 1;
-                    return s.split(/\s+/).every((tok) => v.includes(tok)) ? 1 : 0;
-                  }}
-                >
-                  <CommandInput placeholder="Buscar por nome, rede ou cidade…" />
-                  <CommandList>
-                    <CommandEmpty>
-                      <div className="flex flex-col items-center gap-2 py-4 text-sm text-muted-foreground">
-                        <Store className="h-6 w-6 opacity-50" />
-                        Nenhum mercado encontrado
-                      </div>
-                    </CommandEmpty>
-                    <CommandGroup>
-                      {markets.map((m) => {
-                        const loc = [m.city, m.state].filter(Boolean).join("/");
-                        const haystack = [m.name, m.chain, m.city, m.state].filter(Boolean).join(" ");
-                        return (
-                          <CommandItem
-                            key={m.id}
-                            value={`${haystack} ${m.id}`}
-                            onSelect={() => {
-                              setMarketId(m.id);
-                              setMarketPickerOpen(false);
-                            }}
-                            className="gap-2"
-                          >
-                            <span
-                              className="h-2.5 w-2.5 shrink-0 rounded-full"
-                              style={{ background: m.color ?? "hsl(var(--primary))" }}
-                            />
-                            <div className="flex min-w-0 flex-1 flex-col">
-                              <span className="truncate font-medium">{m.name}</span>
-                              {(m.chain || loc) && (
-                                <span className="truncate text-xs text-muted-foreground">
-                                  {[m.chain, loc].filter(Boolean).join(" · ")}
-                                </span>
-                              )}
-                            </div>
-                            <Check
+                <div className="flex items-center border-b px-3">
+                  <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                  <input
+                    autoFocus
+                    value={marketSearch}
+                    onChange={(e) => setMarketSearch(e.target.value)}
+                    placeholder="Buscar por nome, rede ou cidade…"
+                    className="flex h-10 w-full bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
+                  />
+                </div>
+                {filteredMarkets.length === 0 ? (
+                  <div className="flex flex-col items-center gap-2 py-8 text-sm text-muted-foreground">
+                    <Store className="h-6 w-6 opacity-50" />
+                    Nenhum mercado encontrado
+                  </div>
+                ) : (
+                  <>
+                    <div
+                      ref={marketScrollRef}
+                      className="max-h-[300px] overflow-y-auto overflow-x-hidden"
+                    >
+                      <div
+                        style={{
+                          height: `${rowVirtualizer.getTotalSize()}px`,
+                          position: "relative",
+                          width: "100%",
+                        }}
+                      >
+                        {rowVirtualizer.getVirtualItems().map((vRow) => {
+                          const m = visibleMarkets[vRow.index];
+                          const loc = [m.city, m.state].filter(Boolean).join("/");
+                          return (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => {
+                                setMarketId(m.id);
+                                setMarketPickerOpen(false);
+                              }}
+                              style={{
+                                position: "absolute",
+                                top: 0,
+                                left: 0,
+                                width: "100%",
+                                height: `${vRow.size}px`,
+                                transform: `translateY(${vRow.start}px)`,
+                              }}
                               className={cn(
-                                "h-4 w-4 shrink-0",
-                                marketId === m.id ? "opacity-100" : "opacity-0",
+                                "flex items-center gap-2 px-2 py-1.5 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground",
+                                marketId === m.id && "bg-accent/50",
                               )}
-                            />
-                          </CommandItem>
-                        );
-                      })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
+                            >
+                              <span
+                                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                style={{ background: m.color ?? "hsl(var(--primary))" }}
+                              />
+                              <div className="flex min-w-0 flex-1 flex-col">
+                                <span className="truncate font-medium">{m.name}</span>
+                                {(m.chain || loc) && (
+                                  <span className="truncate text-xs text-muted-foreground">
+                                    {[m.chain, loc].filter(Boolean).join(" · ")}
+                                  </span>
+                                )}
+                              </div>
+                              <Check
+                                className={cn(
+                                  "h-4 w-4 shrink-0",
+                                  marketId === m.id ? "opacity-100" : "opacity-0",
+                                )}
+                              />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between border-t px-3 py-2 text-xs text-muted-foreground">
+                      <span>
+                        Mostrando {visibleCount} de {filteredMarkets.length}
+                      </span>
+                      {visibleCount < filteredMarkets.length && (
+                        <button
+                          type="button"
+                          onClick={() => setMarketPage((p) => p + 1)}
+                          className="font-medium text-primary hover:underline"
+                        >
+                          Carregar mais
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
               </PopoverContent>
             </Popover>
             <p className="mt-1.5 text-xs text-muted-foreground">
