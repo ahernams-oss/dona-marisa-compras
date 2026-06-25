@@ -13,7 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { SingleProductPicker, type CatalogProduct } from "@/components/SingleProductPicker";
-import { cn, formatBRL } from "@/lib/utils";
+import { BrandPicker, type Brand } from "@/components/BrandPicker";
+import { cn, formatBRL, normalizeProductKey } from "@/lib/utils";
 
 const MARKET_PAGE_SIZE = 50;
 const MARKET_ROW_HEIGHT = 56;
@@ -34,6 +35,20 @@ const marketsQueryOptions = queryOptions({
   gcTime: 30 * 60_000,
 });
 
+const brandsQueryOptions = queryOptions({
+  queryKey: ["brands", "picker"],
+  queryFn: async (): Promise<Brand[]> => {
+    const { data, error } = await supabase
+      .from("brands")
+      .select("id,name,normalized_name,category")
+      .order("name");
+    if (error) throw error;
+    return (data ?? []) as Brand[];
+  },
+  staleTime: 5 * 60_000,
+  gcTime: 30 * 60_000,
+});
+
 function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
@@ -45,7 +60,11 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
 }
 
 export const Route = createFileRoute("/_authenticated/report")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(marketsQueryOptions),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(marketsQueryOptions),
+      context.queryClient.ensureQueryData(brandsQueryOptions),
+    ]),
   component: ReportPage,
   errorComponent: ({ error }) => {
     const router = useRouter();
@@ -67,6 +86,7 @@ function ReportPage() {
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const { data: markets } = useSuspenseQuery(marketsQueryOptions);
+  const { data: brands } = useSuspenseQuery(brandsQueryOptions);
   const [marketId, setMarketId] = useState("");
   const [marketPickerOpen, setMarketPickerOpen] = useState(false);
   const [marketSearch, setMarketSearch] = useState("");
@@ -78,7 +98,7 @@ function ReportPage() {
   const [submitting, setSubmitting] = useState(false);
   const [product, setProduct] = useState<CatalogProduct | null>(null);
   const [aiSeed, setAiSeed] = useState<string>("");
-  const [brand, setBrand] = useState("");
+  const [brand, setBrand] = useState<Brand | null>(null);
   const [price, setPrice] = useState("");
   const selectedMarket = markets.find((m) => m.id === marketId);
   const { position: geo, requesting: geoRequesting, error: geoError, request: requestGeo, clear: clearGeo } = useGeolocation();
@@ -157,7 +177,11 @@ function ReportPage() {
       if (!res.ok) throw new Error("Falha ao ler etiqueta");
       const data = await res.json();
       if (data.product_name) setAiSeed(String(data.product_name));
-      if (data.brand) setBrand(data.brand);
+      if (data.brand) {
+        const aiKey = normalizeProductKey(String(data.brand));
+        const match = brands.find((b) => b.normalized_name === aiKey);
+        if (match) setBrand(match);
+      }
       if (data.price) setPrice(String(data.price));
       toast.success("IA leu a etiqueta — confirme o produto no catálogo 💜");
     } catch (e) {
@@ -169,8 +193,8 @@ function ReportPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !marketId || !product || !price) {
-      toast.error("Preencha mercado, produto e preço.");
+    if (!user || !marketId || !product || !price || !brand) {
+      toast.error("Preencha mercado, produto, marca e preço.");
       return;
     }
     setSubmitting(true);
@@ -188,7 +212,8 @@ function ReportPage() {
         reporter_id: user.id,
         product_name: product.name,
         product_key: product.product_key,
-        brand: brand.trim() || null,
+        brand_id: brand.id,
+        brand: brand.name,
         price: Number(price),
         unit: product.unit,
         category: product.category,
@@ -456,16 +481,11 @@ function ReportPage() {
             <SingleProductPicker value={product} onChange={setProduct} seed={aiSeed} />
           </div>
           <div className="sm:col-span-2">
-            <Label htmlFor="brand">Marca (opcional)</Label>
-            <Input
-              id="brand"
-              value={brand}
-              onChange={(e) => setBrand(e.target.value)}
-              placeholder="Ex: Tio João, Camil — deixe em branco para 'sem marca'"
-              className="mt-1.5"
-            />
+            <Label>Marca</Label>
+            <BrandPicker value={brand} onChange={setBrand} brands={brands} />
             <p className="mt-1 text-xs text-muted-foreground">
-              A marca é registrada como metadado e não muda como o produto é comparado entre mercados.
+              A marca é obrigatória — escolha "Sem marca" se o produto não tiver uma marca específica.
+              Não encontrou? Solicite o cadastro para um moderador.
             </p>
           </div>
           <div className="sm:col-span-2">
@@ -474,7 +494,7 @@ function ReportPage() {
           </div>
         </div>
 
-        <Button type="submit" disabled={submitting || extracting || !product} className="w-full rounded-full" size="lg">
+        <Button type="submit" disabled={submitting || extracting || !product || !brand} className="w-full rounded-full" size="lg">
           {submitting ? "Salvando..." : "Reportar preço"}
         </Button>
       </form>

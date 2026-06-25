@@ -2,17 +2,19 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Shield, ShieldOff, Search, Users, Crown, Store, Tag, Package, GitMerge, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Shield, ShieldOff, Search, Users, Crown, Store, Tag, Package, GitMerge, CheckCircle2, AlertTriangle, Sparkles, ThumbsUp, ThumbsDown } from "lucide-react";
 import { toast } from "sonner";
 
 import {
-  checkIsAdmin,
+  checkIsStaff,
   listUsers,
   setUserRole,
   listPricesByMarket,
   listProductKeysUsage,
   mergeProductKey,
   promoteToCatalog,
+  listBrandRequests,
+  reviewBrandRequest,
 } from "@/lib/admin.functions";
 import {
   Dialog,
@@ -22,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,24 +51,26 @@ export const Route = createFileRoute("/_authenticated/admin")({
 function AdminPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const checkFn = useServerFn(checkIsAdmin);
+  const checkFn = useServerFn(checkIsStaff);
   const listFn = useServerFn(listUsers);
   const setRoleFn = useServerFn(setUserRole);
   const pricesFn = useServerFn(listPricesByMarket);
 
-  const adminQuery = useQuery({
-    queryKey: ["is-admin"],
+  const staffQuery = useQuery({
+    queryKey: ["is-staff"],
     queryFn: () => checkFn({}),
   });
 
-  const isAdmin = adminQuery.data?.isAdmin;
+  const isAdmin = staffQuery.data?.isAdmin;
+  const isModerator = staffQuery.data?.isModerator;
+  const isStaff = isAdmin || isModerator;
 
   useEffect(() => {
-    if (adminQuery.isSuccess && !isAdmin) {
-      toast.error("Acesso restrito a administradores");
+    if (staffQuery.isSuccess && !isStaff) {
+      toast.error("Acesso restrito a administradores e moderadores");
       navigate({ to: "/lists" });
     }
-  }, [adminQuery.isSuccess, isAdmin, navigate]);
+  }, [staffQuery.isSuccess, isStaff, navigate]);
 
   const usersQuery = useQuery({
     queryKey: ["admin-users"],
@@ -81,7 +85,7 @@ function AdminPage() {
   });
 
   const mutate = useMutation({
-    mutationFn: (vars: { userId: string; role: "admin" | "user"; grant: boolean }) =>
+    mutationFn: (vars: { userId: string; role: "admin" | "moderator" | "user"; grant: boolean }) =>
       setRoleFn({ data: vars }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-users"] });
@@ -106,7 +110,7 @@ function AdminPage() {
   const adminCount = (usersQuery.data ?? []).filter((u) => u.roles.includes("admin")).length;
   const total = usersQuery.data?.length ?? 0;
 
-  if (adminQuery.isLoading || !isAdmin) {
+  if (staffQuery.isLoading || !isStaff) {
     return (
       <div className="py-20 text-center text-muted-foreground">Verificando permissões…</div>
     );
@@ -149,16 +153,25 @@ function AdminPage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="users" className="space-y-4">
+      <Tabs defaultValue={isAdmin ? "users" : "brands"} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="users">
-            <Users className="mr-2 h-4 w-4" /> Usuários
-          </TabsTrigger>
-          <TabsTrigger value="prices">
-            <Tag className="mr-2 h-4 w-4" /> Preços por mercado
-          </TabsTrigger>
-          <TabsTrigger value="products">
-            <Package className="mr-2 h-4 w-4" /> Produtos
+          {isAdmin && (
+            <TabsTrigger value="users">
+              <Users className="mr-2 h-4 w-4" /> Usuários
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="prices">
+              <Tag className="mr-2 h-4 w-4" /> Preços por mercado
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="products">
+              <Package className="mr-2 h-4 w-4" /> Produtos
+            </TabsTrigger>
+          )}
+          <TabsTrigger value="brands">
+            <Sparkles className="mr-2 h-4 w-4" /> Marcas
           </TabsTrigger>
         </TabsList>
 
@@ -193,6 +206,7 @@ function AdminPage() {
                   <TableBody>
                     {filtered.map((u) => {
                       const isAdminUser = u.roles.includes("admin");
+                      const isModUser = u.roles.includes("moderator");
                       return (
                         <TableRow key={u.id}>
                           <TableCell>
@@ -208,37 +222,56 @@ function AdminPage() {
                               : "Nunca"}
                           </TableCell>
                           <TableCell>
-                            {isAdminUser ? (
-                              <Badge className="bg-coral text-coral-foreground hover:bg-coral/90">
-                                Admin
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary">Usuário</Badge>
-                            )}
+                            <div className="flex flex-wrap gap-1">
+                              {isAdminUser && (
+                                <Badge className="bg-coral text-coral-foreground hover:bg-coral/90">Admin</Badge>
+                              )}
+                              {isModUser && (
+                                <Badge className="bg-violet-100 text-violet-900 hover:bg-violet-100">Moderador</Badge>
+                              )}
+                              {!isAdminUser && !isModUser && <Badge variant="secondary">Usuário</Badge>}
+                            </div>
                           </TableCell>
                           <TableCell className="text-right">
-                            {isAdminUser ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={mutate.isPending}
-                                onClick={() =>
-                                  mutate.mutate({ userId: u.id, role: "admin", grant: false })
-                                }
-                              >
-                                <ShieldOff className="h-3.5 w-3.5" /> Revogar admin
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                disabled={mutate.isPending}
-                                onClick={() =>
-                                  mutate.mutate({ userId: u.id, role: "admin", grant: true })
-                                }
-                              >
-                                <Shield className="h-3.5 w-3.5" /> Tornar admin
-                              </Button>
-                            )}
+                            <div className="flex flex-wrap justify-end gap-2">
+                              {isAdminUser ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={mutate.isPending}
+                                  onClick={() => mutate.mutate({ userId: u.id, role: "admin", grant: false })}
+                                >
+                                  <ShieldOff className="h-3.5 w-3.5" /> Revogar admin
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  disabled={mutate.isPending}
+                                  onClick={() => mutate.mutate({ userId: u.id, role: "admin", grant: true })}
+                                >
+                                  <Shield className="h-3.5 w-3.5" /> Admin
+                                </Button>
+                              )}
+                              {isModUser ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={mutate.isPending}
+                                  onClick={() => mutate.mutate({ userId: u.id, role: "moderator", grant: false })}
+                                >
+                                  <ShieldOff className="h-3.5 w-3.5" /> Revogar moderador
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  disabled={mutate.isPending}
+                                  onClick={() => mutate.mutate({ userId: u.id, role: "moderator", grant: true })}
+                                >
+                                  <Sparkles className="h-3.5 w-3.5" /> Moderador
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
@@ -344,6 +377,10 @@ function AdminPage() {
 
         <TabsContent value="products">
           <ProductsTab />
+        </TabsContent>
+
+        <TabsContent value="brands">
+          <BrandsTab />
         </TabsContent>
       </Tabs>
     </div>
@@ -565,6 +602,123 @@ function ProductsTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </Card>
+  );
+}
+
+function BrandsTab() {
+  const qc = useQueryClient();
+  const [status, setStatus] = useState<"pending" | "approved" | "rejected" | "all">("pending");
+  const listFn = useServerFn(listBrandRequests);
+  const reviewFn = useServerFn(reviewBrandRequest);
+
+  const query = useQuery({
+    queryKey: ["admin-brand-requests", status],
+    queryFn: () => listFn({ data: { status } }),
+  });
+
+  const review = useMutation({
+    mutationFn: (vars: { id: string; action: "approve" | "reject"; notes?: string }) =>
+      reviewFn({ data: vars }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["admin-brand-requests"] });
+      qc.invalidateQueries({ queryKey: ["brands"] });
+      toast.success(vars.action === "approve" ? "Marca aprovada" : "Solicitação rejeitada");
+    },
+    onError: (err: any) => toast.error(err?.message ?? "Erro"),
+  });
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <CardTitle>Solicitações de marcas</CardTitle>
+          <CardDescription>Aprovar ou rejeitar novas marcas sugeridas pelos usuários.</CardDescription>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {(["pending", "approved", "rejected", "all"] as const).map((s) => (
+            <Button
+              key={s}
+              size="sm"
+              variant={status === s ? "default" : "outline"}
+              onClick={() => setStatus(s)}
+            >
+              {s === "pending" ? "Pendentes" : s === "approved" ? "Aprovadas" : s === "rejected" ? "Rejeitadas" : "Todas"}
+            </Button>
+          ))}
+        </div>
+      </CardHeader>
+      <CardContent>
+        {query.isLoading ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">Carregando…</p>
+        ) : (query.data ?? []).length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma solicitação.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Marca</TableHead>
+                <TableHead>Categoria sugerida</TableHead>
+                <TableHead>Solicitado por</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(query.data ?? []).map((r: any) => (
+                <TableRow key={r.id}>
+                  <TableCell>
+                    <div className="font-medium">{r.name}</div>
+                    <div className="text-xs text-muted-foreground">{r.normalized_name}</div>
+                  </TableCell>
+                  <TableCell className="text-sm">{r.suggested_category ?? "—"}</TableCell>
+                  <TableCell className="text-xs">
+                    <div>{r.requested_by_name ?? "—"}</div>
+                    <div className="text-muted-foreground">
+                      {new Date(r.created_at).toLocaleString("pt-BR")}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {r.status === "pending" && <Badge variant="secondary">Pendente</Badge>}
+                    {r.status === "approved" && (
+                      <Badge className="bg-emerald-100 text-emerald-900 hover:bg-emerald-100">Aprovada</Badge>
+                    )}
+                    {r.status === "rejected" && <Badge variant="outline">Rejeitada</Badge>}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {r.status === "pending" ? (
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          disabled={review.isPending}
+                          onClick={() => review.mutate({ id: r.id, action: "approve" })}
+                        >
+                          <ThumbsUp className="h-3.5 w-3.5" /> Aprovar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={review.isPending}
+                          onClick={() => {
+                            const notes = window.prompt("Motivo da rejeição (opcional):") ?? undefined;
+                            review.mutate({ id: r.id, action: "reject", notes });
+                          }}
+                        >
+                          <ThumbsDown className="h-3.5 w-3.5" /> Rejeitar
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        {r.reviewed_by_name ?? "—"}
+                      </span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
     </Card>
   );
 }

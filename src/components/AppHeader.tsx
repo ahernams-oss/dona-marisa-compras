@@ -4,18 +4,18 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { checkIsAdmin } from "@/lib/admin.functions";
+import { checkIsStaff } from "@/lib/admin.functions";
 
 export function AppHeader() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const checkFn = useServerFn(checkIsAdmin);
-  const { data: adminData } = useQuery({
-    queryKey: ["is-admin"],
+  const checkFn = useServerFn(checkIsStaff);
+  const { data: staff } = useQuery({
+    queryKey: ["is-staff"],
     queryFn: () => checkFn({}),
     enabled: !!user,
   });
-  const isAdmin = adminData?.isAdmin;
+  const isStaff = staff?.isAdmin || staff?.isModerator;
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
@@ -43,13 +43,13 @@ export function AppHeader() {
             >
               <Store className="h-4 w-4" /> Mercados
             </Link>
-            {isAdmin && (
+            {isStaff && (
               <Link
                 to="/admin"
                 className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground sm:flex"
                 activeProps={{ className: "bg-accent text-foreground" }}
               >
-                <Shield className="h-4 w-4" /> Admin
+                <Shield className="h-4 w-4" /> {staff?.isAdmin ? "Admin" : "Moderação"}
               </Link>
             )}
             <Link
