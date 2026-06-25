@@ -16,14 +16,14 @@ import { cn, normalizeProductKey, formatBRL, CATEGORIES, suggestCategory, type C
 const MARKET_PAGE_SIZE = 50;
 const MARKET_ROW_HEIGHT = 56;
 
-type Market = { id: string; name: string; color: string | null; chain: string | null; city: string | null; state: string | null };
+type Market = { id: string; name: string; color: string | null; chain: string | null; city: string | null; state: string | null; latitude: number | null; longitude: number | null };
 
 const marketsQueryOptions = queryOptions({
   queryKey: ["markets", "picker"],
   queryFn: async (): Promise<Market[]> => {
     const { data, error } = await supabase
       .from("markets")
-      .select("id,name,color,chain,city,state")
+      .select("id,name,color,chain,city,state,latitude,longitude")
       .order("name");
     if (error) throw error;
     return (data ?? []) as Market[];
@@ -31,6 +31,16 @@ const marketsQueryOptions = queryOptions({
   staleTime: 5 * 60_000,
   gcTime: 30 * 60_000,
 });
+
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const R = 6371;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const lat1 = (a.lat * Math.PI) / 180;
+  const lat2 = (b.lat * Math.PI) / 180;
+  const h = Math.sin(dLat / 2) ** 2 + Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
 
 export const Route = createFileRoute("/_authenticated/report")({
   loader: ({ context }) => context.queryClient.ensureQueryData(marketsQueryOptions),
