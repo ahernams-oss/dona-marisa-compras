@@ -403,9 +403,55 @@ function ReportPage() {
                 )}
               </PopoverContent>
             </Popover>
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              {markets.length} {markets.length === 1 ? "mercado cadastrado" : "mercados cadastrados"} — busque por nome, rede ou cidade.
-            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {geo ? (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={sortByDistance ? "default" : "outline"}
+                    onClick={() => setSortByDistance((v) => !v)}
+                    className="h-8 rounded-full"
+                  >
+                    <MapPin className="mr-1.5 h-3.5 w-3.5" />
+                    {sortByDistance ? "Ordenando por distância" : "Ordenar por distância"}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => { clearGeo(); setSortByDistance(false); }}
+                    className="h-8 rounded-full text-muted-foreground"
+                  >
+                    <X className="mr-1 h-3.5 w-3.5" />
+                    Limpar localização
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => { requestGeo(); setSortByDistance(true); }}
+                  disabled={geoRequesting}
+                  className="h-8 rounded-full"
+                >
+                  {geoRequesting ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <MapPin className="mr-1.5 h-3.5 w-3.5" />
+                  )}
+                  {geoRequesting ? "Localizando…" : "Mercados próximos a mim"}
+                </Button>
+              )}
+              <span className="text-xs text-muted-foreground">
+                {markets.length} {markets.length === 1 ? "mercado cadastrado" : "mercados cadastrados"}
+              </span>
+            </div>
+            {geoError && (
+              <p className="mt-1 text-xs text-destructive">{geoError}</p>
+            )}
+
           </div>
           <div className="sm:col-span-2">
             <Label htmlFor="product">
