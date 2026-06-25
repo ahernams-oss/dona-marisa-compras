@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Camera, Sparkles, Upload, Loader2, Info } from "lucide-react";
+import { Camera, Sparkles, Upload, Loader2, Info, Check, ChevronsUpDown, Store } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -8,13 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { normalizeProductKey, formatBRL, CATEGORIES, suggestCategory, type CategoryValue } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn, normalizeProductKey, formatBRL, CATEGORIES, suggestCategory, type CategoryValue } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/report")({
   component: ReportPage,
 });
 
-type Market = { id: string; name: string; color: string | null };
+type Market = { id: string; name: string; color: string | null; chain: string | null; city: string | null; state: string | null };
 
 function ReportPage() {
   const { user } = useAuth();
@@ -22,6 +24,7 @@ function ReportPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [markets, setMarkets] = useState<Market[]>([]);
   const [marketId, setMarketId] = useState("");
+  const [marketPickerOpen, setMarketPickerOpen] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [extracting, setExtracting] = useState(false);
@@ -31,9 +34,10 @@ function ReportPage() {
   const [price, setPrice] = useState("");
   const [unit, setUnit] = useState("un");
   const [category, setCategory] = useState<CategoryValue>("outros");
+  const selectedMarket = markets.find((m) => m.id === marketId);
 
   useEffect(() => {
-    supabase.from("markets").select("id,name,color").order("name").then(({ data }) => {
+    supabase.from("markets").select("id,name,color,chain,city,state").order("name").then(({ data }) => {
       setMarkets((data ?? []) as Market[]);
       if (data && data.length > 0) setMarketId(data[0].id);
     });
@@ -175,16 +179,97 @@ function ReportPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Label htmlFor="market">Mercado</Label>
-            <select
-              id="market"
-              value={marketId}
-              onChange={(e) => setMarketId(e.target.value)}
-              className="mt-1.5 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-            >
-              {markets.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
+            <Popover open={marketPickerOpen} onOpenChange={setMarketPickerOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  id="market"
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={marketPickerOpen}
+                  className="mt-1.5 h-10 w-full justify-between font-normal"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    {selectedMarket ? (
+                      <>
+                        <span
+                          className="h-2.5 w-2.5 shrink-0 rounded-full"
+                          style={{ background: selectedMarket.color ?? "hsl(var(--primary))" }}
+                        />
+                        <span className="truncate">{selectedMarket.name}</span>
+                        {(selectedMarket.city || selectedMarket.state) && (
+                          <span className="truncate text-xs text-muted-foreground">
+                            · {[selectedMarket.city, selectedMarket.state].filter(Boolean).join("/")}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">Selecione um mercado…</span>
+                    )}
+                  </span>
+                  <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
+                <Command
+                  filter={(value, search) => {
+                    const v = value.toLowerCase();
+                    const s = search.toLowerCase().trim();
+                    if (!s) return 1;
+                    return s.split(/\s+/).every((tok) => v.includes(tok)) ? 1 : 0;
+                  }}
+                >
+                  <CommandInput placeholder="Buscar por nome, rede ou cidade…" />
+                  <CommandList>
+                    <CommandEmpty>
+                      <div className="flex flex-col items-center gap-2 py-4 text-sm text-muted-foreground">
+                        <Store className="h-6 w-6 opacity-50" />
+                        Nenhum mercado encontrado
+                      </div>
+                    </CommandEmpty>
+                    <CommandGroup>
+                      {markets.map((m) => {
+                        const loc = [m.city, m.state].filter(Boolean).join("/");
+                        const haystack = [m.name, m.chain, m.city, m.state].filter(Boolean).join(" ");
+                        return (
+                          <CommandItem
+                            key={m.id}
+                            value={`${haystack} ${m.id}`}
+                            onSelect={() => {
+                              setMarketId(m.id);
+                              setMarketPickerOpen(false);
+                            }}
+                            className="gap-2"
+                          >
+                            <span
+                              className="h-2.5 w-2.5 shrink-0 rounded-full"
+                              style={{ background: m.color ?? "hsl(var(--primary))" }}
+                            />
+                            <div className="flex min-w-0 flex-1 flex-col">
+                              <span className="truncate font-medium">{m.name}</span>
+                              {(m.chain || loc) && (
+                                <span className="truncate text-xs text-muted-foreground">
+                                  {[m.chain, loc].filter(Boolean).join(" · ")}
+                                </span>
+                              )}
+                            </div>
+                            <Check
+                              className={cn(
+                                "h-4 w-4 shrink-0",
+                                marketId === m.id ? "opacity-100" : "opacity-0",
+                              )}
+                            />
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {markets.length} {markets.length === 1 ? "mercado cadastrado" : "mercados cadastrados"} — busque por nome, rede ou cidade.
+            </p>
           </div>
           <div className="sm:col-span-2">
             <Label htmlFor="product">
