@@ -524,28 +524,39 @@ function ProductsTab() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      {!r.in_catalog && (
-                        <div className="flex justify-end gap-2">
-                          <Button size="sm" variant="outline" onClick={() => setMerging(r)}>
-                            <GitMerge className="mr-1 h-3.5 w-3.5" /> Mesclar
-                          </Button>
+                      <div className="flex justify-end gap-2">
+                        {r.in_catalog && (
                           <Button
                             size="sm"
-                            variant="ghost"
-                            disabled={promote.isPending || !r.category || !r.unit}
-                            onClick={() =>
-                              promote.mutate({
-                                product_key: r.product_key,
-                                name: r.sample_name,
-                                category: r.category ?? "outros",
-                                unit: r.unit ?? "un",
-                              })
-                            }
+                            variant="outline"
+                            onClick={() => setBrandsDialogProductKey(r.product_key)}
                           >
-                            <Package className="mr-1 h-3.5 w-3.5" /> Promover
+                            <Sparkles className="mr-1 h-3.5 w-3.5" /> Marcas
                           </Button>
-                        </div>
-                      )}
+                        )}
+                        {!r.in_catalog && (
+                          <>
+                            <Button size="sm" variant="outline" onClick={() => setMerging(r)}>
+                              <GitMerge className="mr-1 h-3.5 w-3.5" /> Mesclar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={promote.isPending || !r.category || !r.unit}
+                              onClick={() =>
+                                promote.mutate({
+                                  product_key: r.product_key,
+                                  name: r.sample_name,
+                                  category: r.category ?? "outros",
+                                  unit: r.unit ?? "un",
+                                })
+                              }
+                            >
+                              <Package className="mr-1 h-3.5 w-3.5" /> Promover
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
