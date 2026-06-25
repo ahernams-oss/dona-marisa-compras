@@ -49,7 +49,10 @@ export function BrandPicker({ value, onChange, brands, productKey, productCatego
 
   const openRequest = () => {
     setRequestName(search.trim() || "");
-    setRequestCategory("");
+    setRequestCategory(productCategory ?? "");
+    setOpen(false);
+    setRequestOpen(true);
+  };
     setOpen(false);
     setRequestOpen(true);
   };
