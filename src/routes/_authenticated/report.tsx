@@ -42,6 +42,34 @@ function ReportPage() {
   const [category, setCategory] = useState<CategoryValue>("outros");
   const selectedMarket = markets.find((m) => m.id === marketId);
 
+  const filteredMarkets = useMemo(() => {
+    const s = marketSearch.toLowerCase().trim();
+    if (!s) return markets;
+    const tokens = s.split(/\s+/);
+    return markets.filter((m) => {
+      const hay = [m.name, m.chain, m.city, m.state].filter(Boolean).join(" ").toLowerCase();
+      return tokens.every((t) => hay.includes(t));
+    });
+  }, [markets, marketSearch]);
+
+  const visibleCount = Math.min(filteredMarkets.length, marketPage * MARKET_PAGE_SIZE);
+  const visibleMarkets = useMemo(
+    () => filteredMarkets.slice(0, visibleCount),
+    [filteredMarkets, visibleCount],
+  );
+
+  useEffect(() => {
+    setMarketPage(1);
+    marketScrollRef.current?.scrollTo({ top: 0 });
+  }, [marketSearch, marketPickerOpen]);
+
+  const rowVirtualizer = useVirtualizer({
+    count: visibleMarkets.length,
+    getScrollElement: () => marketScrollRef.current,
+    estimateSize: () => MARKET_ROW_HEIGHT,
+    overscan: 8,
+  });
+
   useEffect(() => {
     supabase.from("markets").select("id,name,color,chain,city,state").order("name").then(({ data }) => {
       setMarkets((data ?? []) as Market[]);
