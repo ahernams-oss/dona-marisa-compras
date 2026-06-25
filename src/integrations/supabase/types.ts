@@ -21,6 +21,7 @@ export type Database = {
           id: string
           name: string
           normalized_name: string
+          product_key: string | null
           requested_by: string
           review_notes: string | null
           reviewed_at: string | null
@@ -35,6 +36,7 @@ export type Database = {
           id?: string
           name: string
           normalized_name: string
+          product_key?: string | null
           requested_by: string
           review_notes?: string | null
           reviewed_at?: string | null
@@ -49,6 +51,7 @@ export type Database = {
           id?: string
           name?: string
           normalized_name?: string
+          product_key?: string | null
           requested_by?: string
           review_notes?: string | null
           reviewed_at?: string | null
@@ -64,6 +67,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "brands"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brand_requests_product_key_fkey"
+            columns: ["product_key"]
+            isOneToOne: false
+            referencedRelation: "product_catalog"
+            referencedColumns: ["product_key"]
           },
         ]
       }
