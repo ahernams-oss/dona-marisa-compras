@@ -50,8 +50,7 @@ export function ShareListDialog({ listId, isOwner }: Props) {
     if (!email.trim()) return;
     setSubmitting(true);
     try {
-      const { data: userId, error: rpcErr } = await supabase.rpc("find_user_by_email", { _email: email.trim() });
-      if (rpcErr) throw rpcErr;
+      const { userId } = await findUser({ data: { email: email.trim() } });
       if (!userId) {
         toast.error("Nenhuma usuária Dona Marisa com esse e-mail. Peça pra ela criar conta primeiro 💜");
         return;
