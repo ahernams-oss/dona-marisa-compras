@@ -143,7 +143,7 @@ export const getSupportAttachmentUrl = createServerFn({ method: "POST" })
       .from("support_messages")
       .select("user_id, attachments")
       .eq("id", data.messageId)
-      .maybeSingle();
+      .maybeSingle<{ user_id: string; attachments: any }>();
     if (error) throw new Error(error.message);
     if (!msg) throw new Error("Solicitação não encontrada");
     const staff = await isStaff(context.userId);
