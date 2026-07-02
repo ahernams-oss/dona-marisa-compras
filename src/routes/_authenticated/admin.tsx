@@ -388,6 +388,10 @@ function AdminPage() {
         <TabsContent value="brands">
           <BrandsTab />
         </TabsContent>
+
+        <TabsContent value="support">
+          <SupportTab />
+        </TabsContent>
       </Tabs>
     </div>
   );
