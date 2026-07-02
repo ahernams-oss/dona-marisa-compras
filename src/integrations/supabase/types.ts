@@ -399,6 +399,45 @@ export type Database = {
         }
         Relationships: []
       }
+      support_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          replied_at: string | null
+          replied_by: string | null
+          staff_reply: string | null
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          replied_at?: string | null
+          replied_by?: string | null
+          staff_reply?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          replied_at?: string | null
+          replied_by?: string | null
+          staff_reply?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
