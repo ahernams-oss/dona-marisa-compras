@@ -176,6 +176,9 @@ function AdminPage() {
           <TabsTrigger value="brands">
             <Sparkles className="mr-2 h-4 w-4" /> Marcas
           </TabsTrigger>
+          <TabsTrigger value="support">
+            <LifeBuoy className="mr-2 h-4 w-4" /> Suporte
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="users">
