@@ -401,6 +401,7 @@ export type Database = {
       }
       support_messages: {
         Row: {
+          attachments: Json | null
           body: string
           created_at: string
           id: string
@@ -413,6 +414,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attachments?: Json | null
           body: string
           created_at?: string
           id?: string
@@ -425,6 +427,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attachments?: Json | null
           body?: string
           created_at?: string
           id?: string
