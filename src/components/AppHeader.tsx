@@ -53,6 +53,13 @@ export function AppHeader() {
               </Link>
             )}
             <Link
+              to="/support"
+              className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground sm:flex"
+              activeProps={{ className: "bg-accent text-foreground" }}
+            >
+              <LifeBuoy className="h-4 w-4" /> Suporte
+            </Link>
+            <Link
               to="/report"
               className="ml-1 inline-flex items-center gap-1.5 rounded-full bg-coral px-3 py-1.5 text-sm font-semibold text-coral-foreground shadow-soft transition hover:opacity-90"
             >
