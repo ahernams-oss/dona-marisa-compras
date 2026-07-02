@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiExtractPriceRouteImport } from './routes/api/extract-price'
+import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated/support'
 import { Route as AuthenticatedReportRouteImport } from './routes/_authenticated/report'
 import { Route as AuthenticatedMarketsRouteImport } from './routes/_authenticated/markets'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -37,6 +38,11 @@ const ApiExtractPriceRoute = ApiExtractPriceRouteImport.update({
   id: '/api/extract-price',
   path: '/api/extract-price',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedSupportRoute = AuthenticatedSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedReportRoute = AuthenticatedReportRouteImport.update({
   id: '/report',
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/markets': typeof AuthenticatedMarketsRoute
   '/report': typeof AuthenticatedReportRoute
+  '/support': typeof AuthenticatedSupportRoute
   '/api/extract-price': typeof ApiExtractPriceRoute
   '/lists/$id': typeof AuthenticatedListsIdRoute
   '/lists/': typeof AuthenticatedListsIndexRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/markets': typeof AuthenticatedMarketsRoute
   '/report': typeof AuthenticatedReportRoute
+  '/support': typeof AuthenticatedSupportRoute
   '/api/extract-price': typeof ApiExtractPriceRoute
   '/lists/$id': typeof AuthenticatedListsIdRoute
   '/lists': typeof AuthenticatedListsIndexRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/markets': typeof AuthenticatedMarketsRoute
   '/_authenticated/report': typeof AuthenticatedReportRoute
+  '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/api/extract-price': typeof ApiExtractPriceRoute
   '/_authenticated/lists/$id': typeof AuthenticatedListsIdRoute
   '/_authenticated/lists/': typeof AuthenticatedListsIndexRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/markets'
     | '/report'
+    | '/support'
     | '/api/extract-price'
     | '/lists/$id'
     | '/lists/'
@@ -114,6 +124,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/markets'
     | '/report'
+    | '/support'
     | '/api/extract-price'
     | '/lists/$id'
     | '/lists'
@@ -125,6 +136,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/markets'
     | '/_authenticated/report'
+    | '/_authenticated/support'
     | '/api/extract-price'
     | '/_authenticated/lists/$id'
     | '/_authenticated/lists/'
@@ -166,6 +178,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/extract-price'
       preLoaderRoute: typeof ApiExtractPriceRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/support': {
+      id: '/_authenticated/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof AuthenticatedSupportRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/report': {
       id: '/_authenticated/report'
@@ -209,6 +228,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedMarketsRoute: typeof AuthenticatedMarketsRoute
   AuthenticatedReportRoute: typeof AuthenticatedReportRoute
+  AuthenticatedSupportRoute: typeof AuthenticatedSupportRoute
   AuthenticatedListsIdRoute: typeof AuthenticatedListsIdRoute
   AuthenticatedListsIndexRoute: typeof AuthenticatedListsIndexRoute
 }
@@ -217,6 +237,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedMarketsRoute: AuthenticatedMarketsRoute,
   AuthenticatedReportRoute: AuthenticatedReportRoute,
+  AuthenticatedSupportRoute: AuthenticatedSupportRoute,
   AuthenticatedListsIdRoute: AuthenticatedListsIdRoute,
   AuthenticatedListsIndexRoute: AuthenticatedListsIndexRoute,
 }
