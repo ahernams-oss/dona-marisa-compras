@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Shield, ShieldOff, Search, Users, Crown, Store, Tag, Package, GitMerge, CheckCircle2, AlertTriangle, Sparkles, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Shield, ShieldOff, Search, Users, Crown, Store, Tag, Package, GitMerge, CheckCircle2, AlertTriangle, Sparkles, ThumbsUp, ThumbsDown, LifeBuoy, Send, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -19,6 +19,18 @@ import {
   setProductBrandAssociations,
   listAllBrands,
 } from "@/lib/admin.functions";
+import {
+  listAllSupportMessages,
+  replySupportMessage,
+} from "@/lib/support.functions";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -175,6 +187,9 @@ function AdminPage() {
           )}
           <TabsTrigger value="brands">
             <Sparkles className="mr-2 h-4 w-4" /> Marcas
+          </TabsTrigger>
+          <TabsTrigger value="support">
+            <LifeBuoy className="mr-2 h-4 w-4" /> Suporte
           </TabsTrigger>
         </TabsList>
 
@@ -384,6 +399,10 @@ function AdminPage() {
 
         <TabsContent value="brands">
           <BrandsTab />
+        </TabsContent>
+
+        <TabsContent value="support">
+          <SupportTab />
         </TabsContent>
       </Tabs>
     </div>
@@ -921,4 +940,159 @@ function BrandsTab() {
     </Card>
   );
 }
+
+function SupportTab() {
+  const qc = useQueryClient();
+  const listFn = useServerFn(listAllSupportMessages);
+  const replyFn = useServerFn(replySupportMessage);
+
+  const [statusFilter, setStatusFilter] = useState<"open" | "in_progress" | "resolved" | "all">(
+    "open",
+  );
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+
+  const q = useQuery({
+    queryKey: ["admin-support", statusFilter],
+    queryFn: () => listFn({ data: { status: statusFilter } }),
+  });
+
+  const mutate = useMutation({
+    mutationFn: (vars: {
+      id: string;
+      reply?: string;
+      status: "open" | "in_progress" | "resolved";
+    }) => replyFn({ data: vars }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-support"] });
+      toast.success("Solicitação atualizada");
+    },
+    onError: (err: any) => toast.error(err?.message ?? "Erro ao atualizar"),
+  });
+
+  const rows = q.data ?? [];
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <CardTitle>Solicitações de suporte</CardTitle>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Responda dúvidas e sugestões enviadas pelos usuários.
+          </p>
+        </div>
+        <div className="w-full sm:w-48">
+          <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="open">Abertas</SelectItem>
+              <SelectItem value="in_progress">Em análise</SelectItem>
+              <SelectItem value="resolved">Resolvidas</SelectItem>
+              <SelectItem value="all">Todas</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {q.isLoading ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">Carregando…</p>
+        ) : rows.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            Nenhuma solicitação nesta categoria.
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {rows.map((m: any) => {
+              const draft = replyDrafts[m.id] ?? m.staff_reply ?? "";
+              return (
+                <li key={m.id} className="rounded-lg border p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">{m.subject}</span>
+                      </div>
+                      <div className="mt-0.5 text-xs text-muted-foreground">
+                        {m.user_name ?? m.user_email ?? m.user_id} ·{" "}
+                        {new Date(m.created_at).toLocaleString("pt-BR")}
+                      </div>
+                    </div>
+                    <Badge variant="secondary">
+                      {m.status === "open"
+                        ? "Aberta"
+                        : m.status === "in_progress"
+                          ? "Em análise"
+                          : "Resolvida"}
+                    </Badge>
+                  </div>
+                  <p className="mt-2 whitespace-pre-wrap text-sm">{m.body}</p>
+
+                  {m.staff_reply && (
+                    <div className="mt-2 rounded-md bg-accent p-3 text-sm">
+                      <div className="mb-1 text-xs font-semibold text-muted-foreground">
+                        Resposta anterior
+                        {m.replied_by_name ? ` · ${m.replied_by_name}` : ""}
+                        {m.replied_at
+                          ? ` · ${new Date(m.replied_at).toLocaleString("pt-BR")}`
+                          : ""}
+                      </div>
+                      <p className="whitespace-pre-wrap">{m.staff_reply}</p>
+                    </div>
+                  )}
+
+                  <div className="mt-3 space-y-2">
+                    <Textarea
+                      value={draft}
+                      onChange={(e) =>
+                        setReplyDrafts((d) => ({ ...d, [m.id]: e.target.value }))
+                      }
+                      placeholder="Escreva uma resposta…"
+                      rows={3}
+                      maxLength={2000}
+                    />
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={mutate.isPending}
+                        onClick={() => mutate.mutate({ id: m.id, status: "in_progress" })}
+                      >
+                        Marcar em análise
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={mutate.isPending || !draft.trim()}
+                        onClick={() =>
+                          mutate.mutate({ id: m.id, status: m.status, reply: draft.trim() })
+                        }
+                      >
+                        <Send className="mr-1 h-3.5 w-3.5" /> Salvar resposta
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={mutate.isPending}
+                        onClick={() =>
+                          mutate.mutate({
+                            id: m.id,
+                            status: "resolved",
+                            reply: draft.trim() ? draft.trim() : undefined,
+                          })
+                        }
+                      >
+                        <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Resolver
+                      </Button>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 

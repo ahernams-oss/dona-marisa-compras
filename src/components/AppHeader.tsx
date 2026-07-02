@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ShoppingBasket, LogOut, Camera, Store, ListChecks, Shield } from "lucide-react";
+import { ShoppingBasket, LogOut, Camera, Store, ListChecks, Shield, LifeBuoy } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
@@ -52,6 +52,13 @@ export function AppHeader() {
                 <Shield className="h-4 w-4" /> {staff?.isAdmin ? "Admin" : "Moderação"}
               </Link>
             )}
+            <Link
+              to="/support"
+              className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground sm:flex"
+              activeProps={{ className: "bg-accent text-foreground" }}
+            >
+              <LifeBuoy className="h-4 w-4" /> Suporte
+            </Link>
             <Link
               to="/report"
               className="ml-1 inline-flex items-center gap-1.5 rounded-full bg-coral px-3 py-1.5 text-sm font-semibold text-coral-foreground shadow-soft transition hover:opacity-90"
