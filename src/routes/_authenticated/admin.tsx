@@ -23,6 +23,7 @@ import {
   listAllSupportMessages,
   replySupportMessage,
 } from "@/lib/support.functions";
+import { AttachmentLink } from "@/routes/_authenticated/support";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
