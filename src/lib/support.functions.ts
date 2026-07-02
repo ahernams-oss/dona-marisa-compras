@@ -43,7 +43,7 @@ export const sendSupportMessage = createServerFn({ method: "POST" })
       subject: data.subject,
       body: data.body,
       attachments: data.attachments,
-    });
+    } as any);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
