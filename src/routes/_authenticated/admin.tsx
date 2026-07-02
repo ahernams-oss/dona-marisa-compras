@@ -23,6 +23,7 @@ import {
   listAllSupportMessages,
   replySupportMessage,
 } from "@/lib/support.functions";
+import { AttachmentLink } from "@/routes/_authenticated/support";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -1027,6 +1028,13 @@ function SupportTab() {
                     </Badge>
                   </div>
                   <p className="mt-2 whitespace-pre-wrap text-sm">{m.body}</p>
+                  {Array.isArray(m.attachments) && m.attachments.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {m.attachments.map((a: any) => (
+                        <AttachmentLink key={a.path} messageId={m.id} att={a} />
+                      ))}
+                    </div>
+                  )}
 
                   {m.staff_reply && (
                     <div className="mt-2 rounded-md bg-accent p-3 text-sm">
