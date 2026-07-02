@@ -86,7 +86,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Crie sua lista de compras, compare preços reportados pela comunidade em vários mercados e descubra onde economizar — inclusive considerando o frete.",
       },
       { name: "author", content: "Dona Marisa" },
-      { property: "og:title", content: "Dona Marisa — sua lista, o melhor preço" },
+      { property: "og:title", content: "Dona Marisa — economize comparando preços entre mercados" },
       {
         property: "og:description",
         content:
@@ -94,6 +94,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Dona Marisa — economize comparando preços entre mercados" },
+      { name: "description", content: "Dona Maria's Smart Cart helps users create shopping lists and find the best prices across different markets." },
+      { property: "og:description", content: "Dona Maria's Smart Cart helps users create shopping lists and find the best prices across different markets." },
+      { name: "twitter:description", content: "Dona Maria's Smart Cart helps users create shopping lists and find the best prices across different markets." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a4021ad6-18cc-4391-9b63-253dbb8a95f4/id-preview-7a77c680--299e3074-2ed1-4b65-a90a-8655953f1149.lovable.app-1782405439471.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a4021ad6-18cc-4391-9b63-253dbb8a95f4/id-preview-7a77c680--299e3074-2ed1-4b65-a90a-8655953f1149.lovable.app-1782405439471.png" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
