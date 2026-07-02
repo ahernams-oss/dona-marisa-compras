@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Shield, ShieldOff, Search, Users, Crown, Store, Tag, Package, GitMerge, CheckCircle2, AlertTriangle, Sparkles, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Shield, ShieldOff, Search, Users, Crown, Store, Tag, Package, GitMerge, CheckCircle2, AlertTriangle, Sparkles, ThumbsUp, ThumbsDown, LifeBuoy, Send, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 
 import {
