@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ShoppingBasket, LogOut, Camera, Store, ListChecks, Shield, LifeBuoy, Megaphone } from "lucide-react";
+import { useState } from "react";
+import { ShoppingBasket, LogOut, Camera, Store, ListChecks, Shield, LifeBuoy, Megaphone, Menu, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
