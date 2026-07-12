@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ShoppingBasket, LogOut, Camera, Store, ListChecks, Shield, LifeBuoy, Megaphone } from "lucide-react";
+import { useState } from "react";
+import { ShoppingBasket, LogOut, Camera, Store, ListChecks, Shield, LifeBuoy, Megaphone, Menu, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
@@ -9,6 +10,7 @@ import { checkIsStaff } from "@/lib/admin.functions";
 export function AppHeader() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
   const checkFn = useServerFn(checkIsStaff);
   const { data: staff } = useQuery({
     queryKey: ["is-staff"],
@@ -63,7 +65,7 @@ export function AppHeader() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="ml-1 rounded-full"
+                className="ml-1 hidden rounded-full sm:inline-flex"
                 onClick={async () => {
                   await signOut();
                   navigate({ to: "/" });
@@ -71,6 +73,16 @@ export function AppHeader() {
                 aria-label="Sair"
               >
                 <LogOut className="h-4 w-4" />
+              </Button>
+              {/* Mobile menu toggle */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full sm:hidden"
+                onClick={() => setMobileOpen((v) => !v)}
+                aria-label="Menu"
+              >
+                {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
             </nav>
           ) : (
@@ -84,6 +96,58 @@ export function AppHeader() {
             </div>
           )}
         </div>
+        {/* Mobile menu panel */}
+        {user && mobileOpen && (
+          <div className="border-t border-border/60 bg-background/95 backdrop-blur-xl sm:hidden">
+            <nav className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3">
+              <Link
+                to="/lists"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent"
+                activeProps={{ className: "bg-accent" }}
+              >
+                <ListChecks className="h-4 w-4" /> Minhas listas
+              </Link>
+              <Link
+                to="/markets"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent"
+                activeProps={{ className: "bg-accent" }}
+              >
+                <Store className="h-4 w-4" /> Mercados
+              </Link>
+              {isStaff && (
+                <Link
+                  to="/admin"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent"
+                  activeProps={{ className: "bg-accent" }}
+                >
+                  <Shield className="h-4 w-4" /> {staff?.isAdmin ? "Admin" : "Moderação"}
+                </Link>
+              )}
+              <Link
+                to="/support"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent"
+                activeProps={{ className: "bg-accent" }}
+              >
+                <LifeBuoy className="h-4 w-4" /> Suporte
+              </Link>
+              <button
+                type="button"
+                onClick={async () => {
+                  setMobileOpen(false);
+                  await signOut();
+                  navigate({ to: "/" });
+                }}
+                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-destructive hover:bg-destructive/10"
+              >
+                <LogOut className="h-4 w-4" /> Sair
+              </button>
+            </nav>
+          </div>
+        )}
       </header>
 
       {user && (

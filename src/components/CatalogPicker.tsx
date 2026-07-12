@@ -309,15 +309,15 @@ function CatalogModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] max-w-3xl overflow-hidden p-0">
-        <DialogHeader className="border-b border-border p-5">
+      <DialogContent className="flex h-[90vh] max-h-[90vh] w-[calc(100vw-1rem)] max-w-3xl flex-col overflow-hidden p-0 sm:h-auto sm:max-h-[85vh]">
+        <DialogHeader className="shrink-0 border-b border-border p-5">
           <DialogTitle>Catálogo de produtos</DialogTitle>
           <DialogDescription>
             Selecione um ou mais itens para adicionar à sua lista.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 border-b border-border p-4">
+        <div className="shrink-0 space-y-3 border-b border-border p-4">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -347,7 +347,7 @@ function CatalogModal({
           </div>
         </div>
 
-        <div className="max-h-[50vh] overflow-auto p-4">
+        <div className="min-h-0 flex-1 overflow-auto p-4">
           {grouped.length === 0 ? (
             <p className="py-12 text-center text-sm text-muted-foreground">
               Nenhum produto encontrado.
@@ -421,7 +421,7 @@ function CatalogModal({
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-border bg-muted/30 p-4">
+        <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 border-t border-border bg-muted/30 p-4">
           <Badge variant="secondary">
             {selected.size} {selected.size === 1 ? "item selecionado" : "itens selecionados"}
           </Badge>
