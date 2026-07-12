@@ -421,7 +421,7 @@ function CatalogModal({
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-border bg-muted/30 p-4">
+        <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 border-t border-border bg-muted/30 p-4">
           <Badge variant="secondary">
             {selected.size} {selected.size === 1 ? "item selecionado" : "itens selecionados"}
           </Badge>
