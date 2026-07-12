@@ -65,7 +65,7 @@ export function AppHeader() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="ml-1 rounded-full"
+                className="ml-1 hidden rounded-full sm:inline-flex"
                 onClick={async () => {
                   await signOut();
                   navigate({ to: "/" });
@@ -73,6 +73,16 @@ export function AppHeader() {
                 aria-label="Sair"
               >
                 <LogOut className="h-4 w-4" />
+              </Button>
+              {/* Mobile menu toggle */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full sm:hidden"
+                onClick={() => setMobileOpen((v) => !v)}
+                aria-label="Menu"
+              >
+                {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
             </nav>
           ) : (
