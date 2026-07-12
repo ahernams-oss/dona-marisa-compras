@@ -10,6 +10,7 @@ import { checkIsStaff } from "@/lib/admin.functions";
 export function AppHeader() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
   const checkFn = useServerFn(checkIsStaff);
   const { data: staff } = useQuery({
     queryKey: ["is-staff"],
