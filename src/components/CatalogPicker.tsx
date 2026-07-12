@@ -347,7 +347,7 @@ function CatalogModal({
           </div>
         </div>
 
-        <div className="max-h-[50vh] overflow-auto p-4">
+        <div className="min-h-0 flex-1 overflow-auto p-4">
           {grouped.length === 0 ? (
             <p className="py-12 text-center text-sm text-muted-foreground">
               Nenhum produto encontrado.
