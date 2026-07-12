@@ -309,8 +309,8 @@ function CatalogModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] max-w-3xl overflow-hidden p-0">
-        <DialogHeader className="border-b border-border p-5">
+      <DialogContent className="flex h-[90vh] max-h-[90vh] w-[calc(100vw-1rem)] max-w-3xl flex-col overflow-hidden p-0 sm:h-auto sm:max-h-[85vh]">
+        <DialogHeader className="shrink-0 border-b border-border p-5">
           <DialogTitle>Catálogo de produtos</DialogTitle>
           <DialogDescription>
             Selecione um ou mais itens para adicionar à sua lista.
