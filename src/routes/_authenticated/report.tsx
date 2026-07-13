@@ -197,27 +197,53 @@ function ReportPage() {
     setPhoto(file);
     const url = URL.createObjectURL(file);
     setPhotoPreview(url);
-    // Auto-extract using AI
+    // Auto-extract using AI — usa resolução alta para preservar centavos sobrescritos
     setExtracting(true);
     try {
-      const base64 = await compressImage(file, 1024, 0.75);
+      const base64 = await compressImage(file, 1600, 0.88);
       const res = await fetch("/api/extract-price", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image: base64 }),
       });
-      if (!res.ok) throw new Error("Falha ao ler etiqueta");
-      const data = await res.json();
-      if (data.product_name) setAiSeed(String(data.product_name));
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const msg = typeof data?.error === "string" ? data.error : "Falha ao ler etiqueta";
+        toast.error(msg + " — você pode preencher à mão.");
+        return;
+      }
+
+      if (data?.error === "unreadable") {
+        toast.warning("A IA não conseguiu ler esta foto. Tente uma foto mais nítida, sem reflexos, ou preencha à mão.");
+        return;
+      }
+
+      let filled = 0;
+      if (data.product_name) {
+        setAiSeed(String(data.product_name));
+        filled++;
+      }
       if (data.brand) {
         const aiKey = normalizeProductKey(String(data.brand));
         const match = brands.find((b) => b.normalized_name === aiKey);
-        if (match) setBrand(match);
+        if (match) {
+          setBrand(match);
+          filled++;
+        }
       }
-      if (data.price) setPrice(String(data.price));
-      toast.success("IA leu a etiqueta — confirme o produto no catálogo 💜");
+      if (data.price != null && !Number.isNaN(Number(data.price))) {
+        setPrice(String(data.price));
+        filled++;
+      }
+
+      if (filled === 0) {
+        toast.warning("A IA respondeu, mas não identificou os campos. Preencha à mão.");
+      } else {
+        toast.success(`IA leu ${filled} campo(s) — confira o produto no catálogo 💜`);
+      }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não consegui ler a etiqueta — preencha à mão");
+      toast.error(e instanceof Error ? e.message : "Erro de rede — preencha à mão");
     } finally {
       setExtracting(false);
     }
