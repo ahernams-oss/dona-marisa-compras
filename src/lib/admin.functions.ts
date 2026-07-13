@@ -2,48 +2,58 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function isAdmin(userId: string): Promise<boolean> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin
-    .from("user_roles")
-    .select("user_id")
-    .eq("user_id", userId)
-    .eq("role", "admin")
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  return !!data;
+async function isAdmin(userId: string, supabaseClient?: any): Promise<boolean> {
+  try {
+    const client = supabaseClient || (await import("@/integrations/supabase/client.server")).supabaseAdmin;
+    const { data, error } = await client
+      .from("user_roles")
+      .select("user_id")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return !!data;
+  } catch (err) {
+    console.error("Error in isAdmin:", err);
+    return false;
+  }
 }
 
-async function isStaff(userId: string): Promise<{ isAdmin: boolean; isModerator: boolean }> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId);
-  if (error) throw new Error(error.message);
-  const roles = (data ?? []).map((r: any) => r.role as string);
-  return { isAdmin: roles.includes("admin"), isModerator: roles.includes("moderator") };
+async function isStaff(userId: string, supabaseClient?: any): Promise<{ isAdmin: boolean; isModerator: boolean }> {
+  try {
+    const client = supabaseClient || (await import("@/integrations/supabase/client.server")).supabaseAdmin;
+    const { data, error } = await client
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    if (error) throw new Error(error.message);
+    const roles = (data ?? []).map((r: any) => r.role as string);
+    return { isAdmin: roles.includes("admin"), isModerator: roles.includes("moderator") };
+  } catch (err) {
+    console.error("Error in isStaff:", err);
+    return { isAdmin: false, isModerator: false };
+  }
 }
 
-async function assertAdmin(_supabase: any, userId: string) {
-  if (!(await isAdmin(userId))) throw new Response("Forbidden", { status: 403 });
+async function assertAdmin(supabase: any, userId: string) {
+  if (!(await isAdmin(userId, supabase))) throw new Response("Forbidden", { status: 403 });
 }
 
-async function assertStaff(userId: string) {
-  const { isAdmin: a, isModerator: m } = await isStaff(userId);
+async function assertStaff(supabase: any, userId: string) {
+  const { isAdmin: a, isModerator: m } = await isStaff(userId, supabase);
   if (!a && !m) throw new Response("Forbidden", { status: 403 });
 }
 
 export const checkIsAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    return { isAdmin: await isAdmin(context.userId) };
+    return { isAdmin: await isAdmin(context.userId, context.supabase) };
   });
 
 export const checkIsStaff = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    return await isStaff(context.userId);
+    return await isStaff(context.userId, context.supabase);
   });
 
 export const listUsers = createServerFn({ method: "GET" })
@@ -326,7 +336,7 @@ export const listBrandRequests = createServerFn({ method: "GET" })
       .parse(data ?? {}),
   )
   .handler(async ({ context, data }) => {
-    await assertStaff(context.userId);
+    await assertStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     let q = supabaseAdmin
@@ -368,7 +378,7 @@ export const reviewBrandRequest = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ context, data }) => {
-    await assertStaff(context.userId);
+    await assertStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: req, error: rErr } = await supabaseAdmin
@@ -446,7 +456,7 @@ export const createBrand = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ context, data }) => {
-    await assertStaff(context.userId);
+    await assertStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const normalized = normalizeBrand(data.name);
     const { data: created, error } = await supabaseAdmin
@@ -470,7 +480,7 @@ export const listProductBrandAssociations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ product_key: z.string().min(1) }).parse(data))
   .handler(async ({ context, data }) => {
-    await assertStaff(context.userId);
+    await assertStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("product_brands")
@@ -491,7 +501,7 @@ export const setProductBrandAssociations = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ context, data }) => {
-    await assertStaff(context.userId);
+    await assertStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Replace the set: delete current and insert new.
@@ -516,7 +526,7 @@ export const setProductBrandAssociations = createServerFn({ method: "POST" })
 export const listAllBrands = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertStaff(context.userId);
+    await assertStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("brands")
