@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Trash2, ArrowLeft, Truck, TrendingDown, Camera, Store, MapPin, History, TrendingUp, Minus } from "lucide-react";
+import { Trash2, ArrowLeft, Truck, TrendingDown, Camera, Store, MapPin, History, TrendingUp, Minus, Plus } from "lucide-react";
 import { ExportPdfDialog } from "@/components/ExportPdfDialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -134,6 +134,14 @@ function ListDetail() {
 
   const removeItem = async (itemId: string) => {
     const { error } = await supabase.from("list_items").delete().eq("id", itemId);
+    if (error) toast.error(error.message);
+    else load();
+  };
+
+  const updateQuantity = async (itemId: string, currentQty: number, delta: number) => {
+    const newQty = Math.max(1, currentQty + delta);
+    if (newQty === currentQty) return;
+    const { error } = await supabase.from("list_items").update({ quantity: newQty }).eq("id", itemId);
     if (error) toast.error(error.message);
     else load();
   };
@@ -345,9 +353,27 @@ function ListDetail() {
                     return (
                       <li key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4">
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-baseline gap-2">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
                             <span className="font-medium">{item.product_name}</span>
-                            <span className="text-xs text-muted-foreground">×{item.quantity}</span>
+                            <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 px-2 py-0.5 scale-90 origin-left">
+                              <button
+                                onClick={() => updateQuantity(item.id, item.quantity, -1)}
+                                className="rounded-full p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                                aria-label="Diminuir quantidade"
+                              >
+                                <Minus className="h-2.5 w-2.5" />
+                              </button>
+                              <span className="min-w-[1rem] text-center text-xs font-semibold tabular-nums">
+                                {item.quantity}
+                              </span>
+                              <button
+                                onClick={() => updateQuantity(item.id, item.quantity, 1)}
+                                className="rounded-full p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                                aria-label="Aumentar quantidade"
+                              >
+                                <Plus className="h-2.5 w-2.5" />
+                              </button>
+                            </div>
                           </div>
                           {best && bestMarket ? (
                             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
