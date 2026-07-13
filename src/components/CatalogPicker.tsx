@@ -131,8 +131,8 @@ export function CatalogPicker({ onAdd, existingKeys }: Props) {
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card p-3 shadow-soft">
-        <div ref={containerRef} className="relative min-w-0 flex-1">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2 rounded-2xl border border-border bg-card p-3 shadow-soft">
+        <div ref={containerRef} className="relative w-full sm:min-w-0 sm:flex-1">
           {/* Lupa clicável que dá foco ao input de busca */}
           <button
             type="button"
@@ -159,7 +159,7 @@ export function CatalogPicker({ onAdd, existingKeys }: Props) {
               if (e.key === "Escape") setPopoverOpen(false);
             }}
             placeholder={loading ? "Carregando catálogo…" : "Busque um produto (ex: arroz 5kg)"}
-            className="border-0 bg-transparent pl-9 pr-9 shadow-none focus-visible:ring-0"
+            className="border-0 bg-transparent pl-9 pr-9 shadow-none focus-visible:ring-0 w-full"
             aria-label="Buscar produto no catálogo"
           />
           {/* Botão limpar (X) que limpa o input e mantém foco */}
@@ -190,11 +190,11 @@ export function CatalogPicker({ onAdd, existingKeys }: Props) {
                     disabled={already}
                     className="flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 sm:py-2.5 text-left text-sm hover:bg-accent disabled:opacity-50 transition-colors duration-150"
                   >
-                    <span className="flex min-w-0 items-center gap-2">
+                    <span className="flex min-w-0 items-center gap-2 flex-1">
                       <span aria-hidden>{cat.emoji}</span>
                       <span className="truncate font-medium">{p.name}</span>
                     </span>
-                    <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
                       <span>{p.unit}</span>
                       {already ? <Check className="h-3.5 w-3.5 text-success" /> : null}
                     </span>
@@ -215,34 +215,36 @@ export function CatalogPicker({ onAdd, existingKeys }: Props) {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2 py-1">
-          <button
+        <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto shrink-0 border-t sm:border-t-0 border-border/40 pt-2 sm:pt-0">
+          <div className="flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2 py-1">
+            <button
+              type="button"
+              onClick={() => setInlineQty((q) => Math.max(1, q - 1))}
+              className="rounded-full p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+              aria-label="Diminuir quantidade"
+            >
+              <Minus className="h-3.5 w-3.5" />
+            </button>
+            <span className="min-w-[1.5rem] text-center text-sm font-semibold tabular-nums">{inlineQty}</span>
+            <button
+              type="button"
+              onClick={() => setInlineQty((q) => q + 1)}
+              className="rounded-full p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+              aria-label="Aumentar quantidade"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <Button
             type="button"
-            onClick={() => setInlineQty((q) => Math.max(1, q - 1))}
-            className="rounded-full p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-            aria-label="Diminuir quantidade"
+            variant="outline"
+            onClick={() => setOpen(true)}
+            className="rounded-full"
           >
-            <Minus className="h-3.5 w-3.5" />
-          </button>
-          <span className="min-w-[1.5rem] text-center text-sm font-semibold tabular-nums">{inlineQty}</span>
-          <button
-            type="button"
-            onClick={() => setInlineQty((q) => q + 1)}
-            className="rounded-full p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-            aria-label="Aumentar quantidade"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
+            <ListPlus className="mr-1 h-4 w-4" />
+            Catálogo
+          </Button>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => setOpen(true)}
-          className="rounded-full"
-        >
-          <ListPlus className="mr-1 h-4 w-4" />
-          Catálogo
-        </Button>
       </div>
 
       <CatalogModal
