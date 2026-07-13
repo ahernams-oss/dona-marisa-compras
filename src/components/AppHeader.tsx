@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { ShoppingBasket, LogOut, Camera, Store, ListChecks, Shield, LifeBuoy, Megaphone, Menu, X } from "lucide-react";
+import { LogOut, Camera, Store, ListChecks, Shield, LifeBuoy, Megaphone, Menu, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
@@ -24,9 +24,11 @@ export function AppHeader() {
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-soft">
-              <ShoppingBasket className="h-5 w-5" />
-            </span>
+            <img
+              src="/logo.png"
+              alt="Dona Marisa Logo"
+              className="h-9 w-9 rounded-xl object-cover shadow-soft"
+            />
             <span className="font-display text-lg font-bold tracking-tight">Dona Marisa</span>
           </Link>
 

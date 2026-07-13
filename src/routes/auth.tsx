@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ShoppingBasket } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 import { Button } from "@/components/ui/button";
@@ -71,9 +70,11 @@ function AuthPage() {
       <div className="absolute inset-0 bg-mesh opacity-70" aria-hidden />
       <div className="relative mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-12">
         <Link to="/" className="mb-8 inline-flex items-center gap-2 self-center">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary text-primary-foreground shadow-glow">
-            <ShoppingBasket className="h-5 w-5" />
-          </span>
+          <img
+            src="/logo.png"
+            alt="Dona Marisa Logo"
+            className="h-10 w-10 rounded-xl object-cover shadow-glow"
+          />
           <span className="font-display text-xl font-bold">Dona Marisa</span>
         </Link>
 

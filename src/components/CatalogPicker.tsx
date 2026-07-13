@@ -44,6 +44,22 @@ export function CatalogPicker({ onAdd, existingKeys }: Props) {
   const [open, setOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Fechar popover ao clicar/tocar fora do container de busca (evita bugs do onBlur no mobile)
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setPopoverOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,6 +102,10 @@ export function CatalogPicker({ onAdd, existingKeys }: Props) {
       },
     ]);
     setInlineQty(1);
+    // Refoca o campo de busca para facilitar a adição contínua de itens no mobile/desktop
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 50);
   };
 
   const handleAddCustom = async () => {
@@ -103,13 +123,25 @@ export function CatalogPicker({ onAdd, existingKeys }: Props) {
       },
     ]);
     setInlineQty(1);
+    // Refoca o campo de busca para facilitar a adição contínua de itens
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 50);
   };
 
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card p-3 shadow-soft">
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <div ref={containerRef} className="relative min-w-0 flex-1">
+          {/* Lupa clicável que dá foco ao input de busca */}
+          <button
+            type="button"
+            onClick={() => inputRef.current?.focus()}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors"
+            aria-label="Focar campo de busca"
+          >
+            <Search className="h-4 w-4" />
+          </button>
           <Input
             ref={inputRef}
             value={query}
@@ -118,7 +150,6 @@ export function CatalogPicker({ onAdd, existingKeys }: Props) {
               setPopoverOpen(true);
             }}
             onFocus={() => setPopoverOpen(true)}
-            onBlur={() => setTimeout(() => setPopoverOpen(false), 150)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
@@ -128,9 +159,23 @@ export function CatalogPicker({ onAdd, existingKeys }: Props) {
               if (e.key === "Escape") setPopoverOpen(false);
             }}
             placeholder={loading ? "Carregando catálogo…" : "Busque um produto (ex: arroz 5kg)"}
-            className="border-0 bg-transparent pl-9 shadow-none focus-visible:ring-0"
+            className="border-0 bg-transparent pl-9 pr-9 shadow-none focus-visible:ring-0"
             aria-label="Buscar produto no catálogo"
           />
+          {/* Botão limpar (X) que limpa o input e mantém foco */}
+          {query && (
+            <button
+              type="button"
+              onClick={() => {
+                setQuery("");
+                inputRef.current?.focus();
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors"
+              aria-label="Limpar busca"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
           {popoverOpen && (suggestions.length > 0 || query.trim()) && (
             <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-80 overflow-auto rounded-xl border border-border bg-popover p-1 shadow-lg">
               {suggestions.map((p) => {
@@ -143,7 +188,7 @@ export function CatalogPicker({ onAdd, existingKeys }: Props) {
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => handlePick(p)}
                     disabled={already}
-                    className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-accent disabled:opacity-50"
+                    className="flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 sm:py-2.5 text-left text-sm hover:bg-accent disabled:opacity-50 transition-colors duration-150"
                   >
                     <span className="flex min-w-0 items-center gap-2">
                       <span aria-hidden>{cat.emoji}</span>
@@ -161,7 +206,7 @@ export function CatalogPicker({ onAdd, existingKeys }: Props) {
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={handleAddCustom}
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-accent"
+                  className="flex w-full items-center gap-2 rounded-xl px-4 py-3 sm:py-2.5 text-left text-sm hover:bg-accent text-primary transition-colors duration-150 font-medium"
                 >
                   <ListPlus className="h-4 w-4 text-primary" />
                   Adicionar "{query.trim()}" como item livre
@@ -319,14 +364,38 @@ function CatalogModal({
 
         <div className="shrink-0 space-y-3 border-b border-border p-4">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <button
+              type="button"
+              onClick={() => {
+                const input = document.getElementById("modal-search-input");
+                input?.focus();
+              }}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors"
+              aria-label="Focar busca no catálogo"
+            >
+              <Search className="h-4 w-4" />
+            </button>
             <Input
+              id="modal-search-input"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar produto…"
-              className="pl-9"
+              className="pl-9 pr-9"
               autoFocus
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  document.getElementById("modal-search-input")?.focus();
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors"
+                aria-label="Limpar busca no catálogo"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             <CategoryChip
