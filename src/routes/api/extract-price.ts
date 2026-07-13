@@ -55,21 +55,24 @@ Responda APENAS com um objeto JSON válido no seguinte formato:
 Se a imagem estiver totalmente ilegível, borrada ou não contiver uma etiqueta de preço visível, responda exatamente:
 {"error": "unreadable"}`;
 
-        try {
-          const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const callModel = async (model: string) =>
+          fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
             method: "POST",
             headers: {
               Authorization: `Bearer ${key}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "google/gemini-2.5-flash",
+              model,
               messages: [
                 { role: "system", content: systemPrompt },
                 {
                   role: "user",
                   content: [
-                    { type: "text", text: "Leia esta etiqueta e devolva o JSON pedido." },
+                    {
+                      type: "text",
+                      text: "Leia esta etiqueta de preço de supermercado brasileiro com atenção aos centavos sobrescritos e devolva estritamente o JSON pedido.",
+                    },
                     { type: "image_url", image_url: { url: image } },
                   ],
                 },
@@ -78,15 +81,23 @@ Se a imagem estiver totalmente ilegível, borrada ou não contiver uma etiqueta 
             }),
           });
 
+        try {
+          let upstream = await callModel("google/gemini-3-flash-preview");
+
+          // Fallback para modelo estável se o preview falhar por erro transitório
+          if (!upstream.ok && upstream.status >= 500) {
+            upstream = await callModel("google/gemini-2.5-flash");
+          }
+
           if (!upstream.ok) {
             const txt = await upstream.text();
             if (upstream.status === 429) {
-              return new Response(JSON.stringify({ error: "Muitas leituras agora. Tente em alguns segundos." }), { status: 429, headers: { "Content-Type": "application/json" } });
+              return new Response(JSON.stringify({ error: "Muitas leituras agora. Aguarde alguns segundos e tente novamente." }), { status: 429, headers: { "Content-Type": "application/json" } });
             }
             if (upstream.status === 402) {
-              return new Response(JSON.stringify({ error: "Créditos da IA esgotados." }), { status: 402, headers: { "Content-Type": "application/json" } });
+              return new Response(JSON.stringify({ error: "Créditos da IA esgotados. Adicione créditos no workspace para continuar." }), { status: 402, headers: { "Content-Type": "application/json" } });
             }
-            return new Response(JSON.stringify({ error: "AI gateway error", detail: txt }), { status: 502, headers: { "Content-Type": "application/json" } });
+            return new Response(JSON.stringify({ error: "Falha ao contatar a IA", detail: txt }), { status: 502, headers: { "Content-Type": "application/json" } });
           }
 
           const json = await upstream.json();
