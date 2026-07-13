@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { SingleProductPicker, type CatalogProduct } from "@/components/SingleProductPicker";
 import { BrandPicker, type Brand } from "@/components/BrandPicker";
-import { cn, formatBRL, normalizeProductKey } from "@/lib/utils";
+import { cn, formatBRL, normalizeProductKey, compressImage } from "@/lib/utils";
 
 const MARKET_PAGE_SIZE = 50;
 const MARKET_ROW_HEIGHT = 56;
@@ -200,12 +200,7 @@ function ReportPage() {
     // Auto-extract using AI
     setExtracting(true);
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const r = new FileReader();
-        r.onload = () => resolve(r.result as string);
-        r.onerror = reject;
-        r.readAsDataURL(file);
-      });
+      const base64 = await compressImage(file, 1024, 0.75);
       const res = await fetch("/api/extract-price", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

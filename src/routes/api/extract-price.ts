@@ -20,14 +20,40 @@ export const Route = createFileRoute("/api/extract-price")({
           });
         }
 
-        const systemPrompt = `Você analisa fotos de etiquetas de preço de supermercados brasileiros.
-Extraia o produto e o preço. Responda APENAS com JSON válido no formato:
-{"product_name": "string", "brand": "string|null", "price": number, "unit": "un|kg|g|L|ml"}
-- product_name: nome curto do produto (ex: "Arroz Tio João 5kg")
-- brand: marca se identificável, senão null
-- price: número decimal em reais (ex: 24.90), sem símbolo
-- unit: unidade de venda
-Se não conseguir ler com confiança, responda {"error":"unreadable"}.`;
+        const systemPrompt = `Você é um assistente especialista em extração de dados (OCR) de etiquetas de preço de supermercados brasileiros (como Mundial, Guanabara, Zona Sul, Pão de Açúcar, etc.).
+Sua tarefa é analisar a imagem fornecida e extrair as informações necessárias com extrema precisão.
+
+### REGRAS DE EXTRAÇÃO:
+1. **Nome do Produto (product_name)**:
+   - Extraia o nome completo e claro do produto (ex: "ARROZ TIO JOÃO PARBOILIZADO 1KG").
+   - Mantenha informações cruciais como peso/volume (ex: "1KG", "900G", "500G") se estiverem presentes no texto da etiqueta.
+   - Remova códigos internos, barras ou textos de aviso que não pertençam ao nome do produto.
+
+2. **Marca (brand)**:
+   - Identifique a marca do produto (ex: "Tio João", "Bom Gosto", "Tio Mingote", "Alemao").
+   - Se a marca for mencionada no nome do produto ou logo da embalagem que aparece na imagem, extraia-a. Se não conseguir identificar, retorne null.
+
+3. **Preço (price)**:
+   - Procure pelo preço de venda atual (o valor que o cliente paga no caixa).
+   - **IMPORTANTE (Preço Promocional)**: Se houver preço regular ("DE") e promocional ("POR" ou "App"), escolha SEMPRE o preço promocional (o menor preço/valor final pago).
+   - **IMPORTANTE (Centavos Sobrescritos)**: Em etiquetas brasileiras, os centavos costumam aparecer em tamanho muito menor ou sobrescrito (ex: o número "3" grande e um "73" menor acima). Junte-os corretamente (ex: 3 e 73 vira o número decimal 3.73).
+   - Retorne o preço estritamente como um número decimal (ex: 3.73 ou 17.80). Nunca inclua cifrões (R$), letras ou texto.
+
+4. **Unidade de Medida (unit)**:
+   - Identifique a unidade de venda com base nas opções: "un" (para unidade/unidade de venda individual), "kg", "g", "L", "ml".
+   - Se na etiqueta constar "Unidade", "UN", "UND" ou similar, converta para "un".
+
+### DIRETRIZES DE SAÍDA:
+Responda APENAS com um objeto JSON válido no seguinte formato:
+{
+  "product_name": "string",
+  "brand": "string|null",
+  "price": number,
+  "unit": "un" | "kg" | "g" | "L" | "ml"
+}
+
+Se a imagem estiver totalmente ilegível, borrada ou não contiver uma etiqueta de preço visível, responda exatamente:
+{"error": "unreadable"}`;
 
         try {
           const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
